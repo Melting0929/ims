@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "618402886119",
+    "project_id": "imsfyp2",
+    "storage_bucket": "imsfyp2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:618402886119:android:b77b331de2b96f562f4d42",
+        "android_client_info": {
+          "package_name": "com.example.ims"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgOBCcEYpJsVN2wZyqG3UPjbJkLc7XWg0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
