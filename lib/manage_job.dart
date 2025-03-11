@@ -32,20 +32,28 @@ class ManageJobTab extends State<ManageJob> {
   List<Map<String, dynamic>> externalData = [];
   List<Map<String, dynamic>> registeredData = [];
 
-  String? selectedJobTitle;
-  String? selectedJobStatus;
+  List<String> jobTitles = [];
+
+  String? selectedJobTitle = 'All';
+  String? selectedJobStatus = 'All';
 
 @override
 void initState() {
   super.initState();
   fetchAdminDetails();
+  fetchJobTitles();
 }
 
   Future<void> _refreshData() async {
-
-    List<Map<String, dynamic>> fetchAdminData = await _getExternalData();
-    List<Map<String, dynamic>> fetchCompanyData = await _getRegisteredData();
-
+    List<Map<String, dynamic>> fetchAdminData = await _getExternalData(
+      jobTitle: selectedJobTitle == 'All' ? null : selectedJobTitle,
+      jobStatus: selectedJobStatus == 'All' ? null : selectedJobStatus,
+    );
+    List<Map<String, dynamic>> fetchCompanyData = await _getRegisteredData(
+      jobTitle: selectedJobTitle == 'All' ? null : selectedJobTitle,
+      jobStatus: selectedJobStatus == 'All' ? null : selectedJobStatus,
+    );
+  
     setState(() {
       externalData = fetchAdminData;
       registeredData = fetchCompanyData;
@@ -130,7 +138,74 @@ void initState() {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _getExternalData() async {
+  Future<void> fetchJobTitles() async {
+    try {
+      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance.collection('Job').get();
+      List<String> titles = jobSnapshot.docs.map((doc) {
+        return doc['jobTitle'] as String;
+      }).toList();
+
+      setState(() {
+        jobTitles = titles;
+        jobTitles.insert(0, 'All');
+      });
+    } catch (e) {
+      print('Error fetching job titles: $e');
+    }
+  }
+
+  Widget _buildFilterDropdowns() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        const Text(
+          "Job Titles:",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        DropdownButton<String>(
+          hint: const Text("Select Job Title"),
+          value: selectedJobTitle,
+          onChanged: (String? newValue) {
+            setState(() {
+              selectedJobTitle = newValue;
+            });
+            _refreshData();
+          },
+          items: jobTitles.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+        const SizedBox(width: 10),
+        const Text(
+          "Job Status:",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(width: 16),
+        DropdownButton<String>(
+          hint: const Text("Select Job Status"),
+          value: selectedJobStatus,
+          onChanged: (String? newValue) {
+            setState(() {
+              selectedJobStatus = newValue;
+            });
+            _refreshData();
+          },
+          items: <String>['All', 'Accepting', 'Closed']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+  
+    Future<List<Map<String, dynamic>>> _getExternalData({String? jobTitle, String? jobStatus}) async {
     try {
       QuerySnapshot jobSnapshot = await FirebaseFirestore.instance.collection('Job').get();
       List<Map<String, dynamic>> externals = jobSnapshot.docs.map((doc) {
@@ -139,13 +214,13 @@ void initState() {
           ...doc.data() as Map<String, dynamic>
         };
       }).toList();
-
+  
       List<Map<String, dynamic>> retrieveExternalData = [];
-
+  
       for (var external in externals) {
         var jobID = external['jobID'];
         var userID = external['userID'];
-
+  
         var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
         if (!userSnapshot.exists) {
           print('User not found: $userID');
@@ -154,32 +229,35 @@ void initState() {
         var user = userSnapshot.data() as Map<String, dynamic>;
         var userType = user['userType'];
         var name = user['name'];
-
+  
         if (userType == 'Admin') {
-          retrieveExternalData.add({
-            'jobID': jobID,
-            'jobTitle': external['jobTitle'] ?? '',
-            'jobDesc': external['jobDesc'] ?? '',
-            'jobAllowance': external['jobAllowance'] ?? '',
-            'jobDuration': external['jobDuration'] ?? '',
-            'jobType': external['jobType'] ?? '',
-            'jobStatus': external['jobStatus'] ?? '',
-            'numApplicant': external['numApplicant'] ?? '',
-            'userID': userID,
-            'name': name,
-            'tags': external['tags'] ?? [], 
-          });
+          if ((jobTitle == null || external['jobTitle'] == jobTitle) &&
+              (jobStatus == null || external['jobStatus'] == jobStatus)) {
+            retrieveExternalData.add({
+              'jobID': jobID,
+              'jobTitle': external['jobTitle'] ?? '',
+              'jobDesc': external['jobDesc'] ?? '',
+              'jobAllowance': external['jobAllowance'] ?? '',
+              'jobDuration': external['jobDuration'] ?? '',
+              'jobType': external['jobType'] ?? '',
+              'jobStatus': external['jobStatus'] ?? '',
+              'numApplicant': external['numApplicant'] ?? '',
+              'userID': userID,
+              'name': name,
+              'tags': external['tags'] ?? [],
+            });
+          }
         }
       }
-
+  
       return retrieveExternalData;
     } catch (e) {
       print('Error retrieving external job data: $e');
       return [];
     }
   }
-
-  Future<List<Map<String, dynamic>>> _getRegisteredData() async {
+  
+  Future<List<Map<String, dynamic>>> _getRegisteredData({String? jobTitle, String? jobStatus}) async {
     try {
       QuerySnapshot jobSnapshot = await FirebaseFirestore.instance.collection('Job').get();
       List<Map<String, dynamic>> registered = jobSnapshot.docs.map((doc) {
@@ -188,48 +266,51 @@ void initState() {
           ...doc.data() as Map<String, dynamic>
         };
       }).toList();
-
+  
       List<Map<String, dynamic>> retrieveRegisteredData = [];
-
+  
       for (var register in registered) {
         var jobID = register['jobID'];
         var userID = register['userID'];
-
+  
         var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
         
         var user = userSnapshot.data() as Map<String, dynamic>;
         var userType = user['userType'];
-
+  
         var companySnapshot = await FirebaseFirestore.instance
             .collection('Company')
             .where('userID', isEqualTo: userID)
             .get();
-
+  
         var company = companySnapshot.docs.isNotEmpty
             ? companySnapshot.docs.first.data()
             : null;
         var name = company != null ? company['companyName'] : 'Unknown';
-
-        if (userType == 'Company'){
-          retrieveRegisteredData.add({
-            'jobID': jobID,
-            'jobTitle': register['jobTitle'] ?? '',
-            'jobDesc': register['jobDesc'] ?? '',
-            'jobAllowance': register['jobAllowance'] ?? '',
-            'jobDuration': register['jobDuration'] ?? '',
-            'jobType': register['jobType'] ?? '',
-            'jobStatus': register['jobStatus'] ?? '',
-            'numApplicant': register['numApplicant'] ?? '',
-            'userID': userID,
-            'name': name,
-            'tags': register['tags'] ?? [], 
-          });
+  
+        if (userType == 'Company') {
+          if ((jobTitle == null || register['jobTitle'] == jobTitle) &&
+              (jobStatus == null || register['jobStatus'] == jobStatus)) {
+            retrieveRegisteredData.add({
+              'jobID': jobID,
+              'jobTitle': register['jobTitle'] ?? '',
+              'jobDesc': register['jobDesc'] ?? '',
+              'jobAllowance': register['jobAllowance'] ?? '',
+              'jobDuration': register['jobDuration'] ?? '',
+              'jobType': register['jobType'] ?? '',
+              'jobStatus': register['jobStatus'] ?? '',
+              'numApplicant': register['numApplicant'] ?? '',
+              'userID': userID,
+              'name': name,
+              'tags': register['tags'] ?? [],
+            });
+          }
         }
       }
-
+  
       return retrieveRegisteredData;
     } catch (e) {
-      print('Error retrieving external job data: $e');
+      print('Error retrieving registered job data: $e');
       return [];
     }
   }
@@ -557,45 +638,50 @@ void initState() {
           ),
         ),
         backgroundColor: Colors.white,
-        body: Row(
-          children: [
-            Expanded(
-              child: TabBarView(
-                children: [
-                   _buildTab(
-                    title: "Manage External Jobs",
-                    onAdd: () => 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddJob(userId: widget.userId),
-                      ),
+        body: Column(
+        children: [
+          _buildFilterDropdowns(),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildTab(
+                  title: "Manage External Jobs",
+                  onAdd: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddJob(userId: widget.userId),
                     ),
-                    onRefresh: _refreshData,
-                    future: _getExternalData(),
-                    builder: _buildTable,
                   ),
-                  _buildTab(
-                    title: "Manage Registered Companies Job",
-                    onAdd: () => 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddJob(userId: widget.userId),
-                      ),
+                  onRefresh: _refreshData,
+                  future: _getExternalData(
+                    jobTitle: selectedJobTitle,
+                    jobStatus: selectedJobStatus,
+                  ),
+                  builder: _buildTable,
+                ),
+                _buildTab(
+                  title: "Manage Registered Companies Job",
+                  onAdd: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddJob(userId: widget.userId),
                     ),
-                    onRefresh: _refreshData,
-                    future: _getRegisteredData(),
-                    builder: _buildTable,
                   ),
-                ],
-              ),
+                  onRefresh: _refreshData,
+                  future: _getRegisteredData(
+                    jobTitle: selectedJobTitle,
+                    jobStatus: selectedJobStatus,
+                  ),
+                  builder: _buildTable,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class JobData extends DataTableSource {
