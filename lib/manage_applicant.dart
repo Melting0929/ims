@@ -8,7 +8,7 @@ import 'company_dashboard.dart';
 import 'download_guideline.dart';
 import 'manage_cjob.dart';
 import 'color.dart';
-// Drop-down not working, waiting for add new data to test
+
 class ManageApplicant extends StatefulWidget {
   final String userId;
   const ManageApplicant({super.key, required this.userId});
