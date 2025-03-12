@@ -517,7 +517,7 @@ class AssessmentData extends DataTableSource {
             : 'N/A')),
         DataCell(
           item['submissionURL'] == null || item['submissionURL'].isEmpty
-              ? Text('') // Display empty text if URL is null or empty
+              ? const Text('') // Display empty text if URL is null or empty
               : InkWell(
                   child: IconButton(
                     icon: const Icon(Icons.download, color: Colors.blue),
@@ -551,7 +551,7 @@ class AssessmentData extends DataTableSource {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditAssessment(docId: item['assessmentID']),
+                      builder: (context) => EditAssessment(assessmentID: item['assessmentID']),
                     ),
                   );
                 },
