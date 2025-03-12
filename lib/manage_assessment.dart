@@ -269,7 +269,7 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         DataColumn(label: Text('Submission Status', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: AssessmentData(data, context, rowEvenColor, rowOddColor),
+      source: AssessmentData(widget.userId, data, context, rowEvenColor, rowOddColor),
     );
   }
 
@@ -490,8 +490,9 @@ class AssessmentData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final String userId;
 
-  AssessmentData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  AssessmentData(this.userId, this.data, this.context, this.rowEvenColor, this.rowOddColor);
 
   @override
   DataRow? getRow(int index) {
@@ -517,7 +518,7 @@ class AssessmentData extends DataTableSource {
             : 'N/A')),
         DataCell(
           item['submissionURL'] == null || item['submissionURL'].isEmpty
-              ? const Text('') // Display empty text if URL is null or empty
+              ? const Text('')
               : InkWell(
                   child: IconButton(
                     icon: const Icon(Icons.download, color: Colors.blue),
@@ -540,7 +541,17 @@ class AssessmentData extends DataTableSource {
                   ),
                 ),
         ),
-        DataCell(Text(item['submissionDate'] ?? '')), // need to change format later
+        DataCell(
+          Text(
+            item['submissionDate'] != null
+                ? (item['submissionDate'] is Timestamp) 
+                    ? dateFormat.format((item['submissionDate'] as Timestamp).toDate()) 
+                    : (DateTime.tryParse(item['submissionDate'].toString()) != null 
+                        ? dateFormat.format(DateTime.parse(item['submissionDate'].toString())) 
+                        : '')
+                : '',
+          ),
+        ),
         DataCell(Text(item['submissionStatus'] ?? '')),
         DataCell(
           Row(
@@ -551,7 +562,7 @@ class AssessmentData extends DataTableSource {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditAssessment(assessmentID: item['assessmentID']),
+                      builder: (context) => EditAssessment(assessmentID: item['assessmentID'], userId: userId,),
                     ),
                   );
                 },
