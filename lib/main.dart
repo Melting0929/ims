@@ -98,86 +98,85 @@ void main() async {
     interviewStatus: 'None',
   );
 
-  /*
+  
   await addTemplate(
+    templateID: '1',
     templateTitle: 'Offer Letter',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'The Offer Letter for the Internship. Student is only required to submit in PDF format.',
   );
 
   await addTemplate(
+    templateID: '2',
     templateTitle: 'Weekly Report 1',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 1. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '3',
     templateTitle: 'Weekly Report 2',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 2. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '4',
     templateTitle: 'Weekly Report 3',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 3. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '5',
     templateTitle: 'Weekly Report 4',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 4. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '6',
     templateTitle: 'Weekly Report 5',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 5. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '7',
     templateTitle: 'Weekly Report 6',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 6. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '8',
     templateTitle: 'Weekly Report 7',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 7. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '9',
     templateTitle: 'Weekly Report 8',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 8. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '10',
     templateTitle: 'Weekly Report 9',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 9. Please filled out the form and submit it by the end of the week.',
   );
-
   await addTemplate(
+    templateID: '11',
     templateTitle: 'Weekly Report 10',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 10. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '12',
     templateTitle: 'Weekly Report 11',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 11. Please filled out the form and submit it by the end of the week.',
   );
   await addTemplate(
+    templateID: '13',
     templateTitle: 'Weekly Report 12',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Weekly Report 12. Please filled out the form and submit it by the end of the week.',
   );
   
   await addTemplate(
+    templateID: '14',
     templateTitle: 'Final Report',
-    templateDesc: '',
-    templateURL:'',
+    templateDesc: 'Final Report. Please submit it by the end of the internship.',
   );
 
   await addTemplate(
+    templateID: '15',
     templateTitle: 'Student Evaluation Form',
-    templateDesc: '',
-    templateURL:'',
-  );*/
+    templateDesc: 'Please fill out the form and submit it by the end of the internship.',
+  );
 }
 
 Future<void> addStudent({
@@ -438,9 +437,9 @@ Future<void> addApplicant({
 }
 
 Future<void> addTemplate({
+  required String templateID,
   required String templateTitle,
   required String templateDesc,
-  required String templateURL,
 
 }) async {
   try {
@@ -455,10 +454,9 @@ Future<void> addTemplate({
       return;
     }
 
-    await FirebaseFirestore.instance.collection('Template').add({
+    await FirebaseFirestore.instance.collection('Template').doc(templateID.toString()).set({
           'templateTitle': templateTitle,
           'templateDesc': templateDesc,
-          'templateURL': templateURL,
     });
     debugPrint('Template added successfully');
   } catch (e) {

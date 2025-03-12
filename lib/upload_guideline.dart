@@ -42,13 +42,13 @@ void initState() {
   fetchAdminDetails();
 }
 
-Future<void> _refreshData() async {
-  List<Map<String, dynamic>> fetchdocData = await _getDocData();
+  Future<void> _refreshData() async {
+    List<Map<String, dynamic>> fetchdocData = await _getDocData();
 
-  setState(() {
-    docData = fetchdocData;
-  });
-}
+    setState(() {
+      docData = fetchdocData;
+    });
+  }
 
   Future<void> logout() async {
     bool confirmLogout = await showDialog(
