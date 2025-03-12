@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'download_guideline.dart';
 import 'login_web.dart';
 import 'eprofile_supervisor.dart';
@@ -144,18 +145,26 @@ class ManageAssessmentTab extends State<ManageAssessment> {
       QuerySnapshot assessmentSnapshot = await FirebaseFirestore.instance.collection('Assessment').get();
       List<Map<String, dynamic>> assessments = [];
 
+      DateTime now = DateTime.now();
+
       for (var assessment in assessmentSnapshot.docs) {
+        Timestamp endDateTimestamp = assessment['assessmentEndDate'] ?? Timestamp(0, 0);
+        DateTime endDate = endDateTimestamp.toDate(); 
+
+        // Determine submission status
+        String submissionStatus = endDate.isBefore(now) ? 'Due' : 'Active';
+
         Map<String, dynamic> assessmentData = {
           'assessmentID': assessment.id,
           'templateID': assessment['templateID'] ?? '',
           'supervisorID': assessment['supervisorID'] ?? '',
           'studID': assessment['studID'] ?? '',
-          'submissionStatus': assessment['submissionStatus'] ?? '',
           'intakePeriod': assessment['intakePeriod'] ?? '',
           'submissionURL': assessment['submissionURL'] ?? '',
           'submissionDate': assessment['submissionDate'] ?? '',
           'assessmentOpenDate': assessment['assessmentOpenDate'] ?? '',
           'assessmentEndDate': assessment['assessmentEndDate'] ?? '',
+          'submissionStatus': submissionStatus, 
           'templateTitle': '',
           'supervisorName': '',
           'studentName': '',
@@ -490,6 +499,8 @@ class AssessmentData extends DataTableSource {
     final item = data[index];
     final isEven = index % 2 == 0;
 
+    final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
+
     return DataRow(
       color: WidgetStateProperty.resolveWith(
         (states) => isEven ? rowEvenColor : rowOddColor,
@@ -498,32 +509,38 @@ class AssessmentData extends DataTableSource {
         DataCell(Text(item['studentName'] ?? '')),
         DataCell(Text(item['templateTitle'] ?? '')),
         DataCell(Text(item['intakePeriod'] ?? '')),
-        DataCell(Text(item['assessmentOpenDate'].toString())),
-        DataCell(Text(item['assessmentEndDate'].toString())), //
+        DataCell(Text(item['assessmentOpenDate'] != null
+            ? dateFormat.format((item['assessmentOpenDate'] as Timestamp).toDate())
+            : 'N/A')),
+        DataCell(Text(item['assessmentEndDate'] != null
+            ? dateFormat.format((item['assessmentEndDate'] as Timestamp).toDate())
+            : 'N/A')),
         DataCell(
-          InkWell(
-            child: IconButton(
-              icon: const Icon(Icons.download, color: Colors.blue),
-              onPressed: () async {
-                final url = Uri.parse(item['submissionURL']);
-                try {
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Could not open the document')),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
-                }
-              },
-            ),
-          ),
+          item['submissionURL'] == null || item['submissionURL'].isEmpty
+              ? Text('') // Display empty text if URL is null or empty
+              : InkWell(
+                  child: IconButton(
+                    icon: const Icon(Icons.download, color: Colors.blue),
+                    onPressed: () async {
+                      final url = Uri.parse(item['submissionURL']);
+                      try {
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not open the document')),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    },
+                  ),
+                ),
         ),
-        DataCell(Text(item['submissionDate'] ?? '')),
+        DataCell(Text(item['submissionDate'] ?? '')), // need to change format later
         DataCell(Text(item['submissionStatus'] ?? '')),
         DataCell(
           Row(

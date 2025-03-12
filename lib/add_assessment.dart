@@ -154,7 +154,6 @@ class _AddAssessmentState extends State<AddAssessment> {
           'studID': selectedStudentID,
           'supervisorID': widget.userId,
           'submissionURL': '',
-          'submissionStatus': 'Active',
           'assessmentOpenDate': _selectedStartDate,
           'assessmentEndDate': _selectedEndDate,
           'intakePeriod': selectedIntakePeriod,
@@ -166,6 +165,8 @@ class _AddAssessmentState extends State<AddAssessment> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Assessment added successfully!')),
         );
+
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving data: $e')),
