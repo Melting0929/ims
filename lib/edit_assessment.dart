@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EditAssessment extends StatefulWidget {
   final String assessmentID;
-  const EditAssessment({super.key, required this.assessmentID});
+  final String userId;
+  const EditAssessment({super.key, required this.assessmentID, required this.userId});
 
   @override
   State<EditAssessment> createState() => _EditAssessmentState();
@@ -15,59 +16,62 @@ class EditAssessment extends StatefulWidget {
 class _EditAssessmentState extends State<EditAssessment> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  DateTime? _selectedStartDate;
-  DateTime? _selectedEndDate;
+  final TextEditingController assessmentNameController = TextEditingController();
+  final TextEditingController studIDController = TextEditingController();
+  final TextEditingController submissionURLController = TextEditingController();
+  final TextEditingController intakePeriodController = TextEditingController();
+  final TextEditingController assessmentOpenDateController = TextEditingController();
+  final TextEditingController assessmentEndDateController = TextEditingController();
+
+  String templateID = '';
+  String assessmentName = '';
+  String studID = '';
+  String intakePeriod = '';
+  DateTime? assessmentOpenDate;
+  DateTime? assessmentEndDate;
 
   Future<List<String>>? assessmentListFuture;
   Future<List<String>>? studentListFuture;
-
-  String selectedAssessmentName = '';
-  String selectedStudentID = '';
-  String selectedIntakePeriod = '';
 
   String supervisorID = '';
 
   @override
   void initState() {
     super.initState();
-    assessmentListFuture = fetchAssessmentNames();
-    studentListFuture = fetchStudentIDs();
+    fetchSubmissionDetails().then((_) {
+      assessmentListFuture = fetchAssessmentNames();
+      studentListFuture = fetchStudentIDs();
+    });
   }
 
   Future<void> _pickStartDate(BuildContext context) async {
-    DateTime? pickedStartDate = await showDatePicker(
+    DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: assessmentOpenDate ?? DateTime.now(),
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
     );
 
-    if (pickedStartDate != null) {
+    if (pickedDate != null) {
       setState(() {
-        _selectedStartDate = DateTime(
-          pickedStartDate.year, 
-          pickedStartDate.month, 
-          pickedStartDate.day,
-        );
+        assessmentOpenDate = pickedDate;
+        assessmentOpenDateController.text = DateFormat('dd MMM yyyy').format(pickedDate);
       });
     }
   }
 
   Future<void> _pickEndDate(BuildContext context) async {
-    DateTime? pickedEndDate = await showDatePicker(
+    DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: assessmentEndDate ?? DateTime.now(),
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
     );
 
-    if (pickedEndDate != null) {
+    if (pickedDate != null) {
       setState(() {
-        _selectedEndDate = DateTime(
-          pickedEndDate.year, 
-          pickedEndDate.month, 
-          pickedEndDate.day,
-        );
+        assessmentEndDate = pickedDate;
+        assessmentEndDateController.text = DateFormat('dd MMM yyyy').format(pickedDate);
       });
     }
   }
@@ -129,57 +133,57 @@ class _EditAssessmentState extends State<EditAssessment> {
     }
   }
 
-  Future<void> saveData() async {
-    if (_formKey.currentState!.validate()) {
-      String templateTitle = selectedAssessmentName;
-      try {
-        QuerySnapshot templateSnapshot = await FirebaseFirestore.instance
-            .collection('Template')
-            .where('templateTitle', isEqualTo: templateTitle)
-            .get();
+  Future<void> fetchSubmissionDetails() async {
+  try {
+    var assessmentDoc = await FirebaseFirestore.instance
+        .collection('Assessment')
+        .doc(widget.assessmentID)
+        .get();
 
-        String templateID = templateSnapshot.docs.first.id;
+    if (assessmentDoc.exists) {
+      templateID = assessmentDoc.data()?['templateID'] ?? 'No templateID';
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('Template')
+          .doc(templateID)
+          .get();
 
-        // Validate fields before adding to Firestore
-        if (_selectedStartDate == null ||
-            _selectedEndDate == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error: All fields must be filled')),
-          );
-          return;
-        }
+      if (docSnapshot.exists) {
+        setState(() {
+          var docData = docSnapshot.data() as Map<String, dynamic>?;
+          assessmentName = docData?['templateTitle'] ?? 'No Assessment Name';
+          studID = assessmentDoc.data()?['studID'] ?? 'No studID';
+          intakePeriod = assessmentDoc.data()?['intakePeriod'] ?? 'No intake period';
 
-        Map<String, dynamic> assessmentData = {
-          'templateID': templateID,
-          'studID': selectedStudentID,
-          'supervisorID': widget.userId,
-          'submissionURL': '',
-          'assessmentOpenDate': _selectedStartDate,
-          'assessmentEndDate': _selectedEndDate,
-          'intakePeriod': selectedIntakePeriod,
-          'submissionDate': '',
-        };
+          assessmentOpenDate = assessmentDoc.data()?['assessmentOpenDate'] is Timestamp
+              ? (assessmentDoc.data()?['assessmentOpenDate'] as Timestamp).toDate()
+              : null;
 
-        await FirebaseFirestore.instance.collection('Assessment').add(assessmentData);
+          assessmentEndDate = assessmentDoc.data()?['assessmentEndDate'] is Timestamp
+              ? (assessmentDoc.data()?['assessmentEndDate'] as Timestamp).toDate()
+              : null;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assessment added successfully!')),
-        );
+          assessmentNameController.text = assessmentName;
+          studIDController.text = studID;
+          intakePeriodController.text = intakePeriod;
 
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving data: $e')),
-        );
+          assessmentOpenDateController.text =
+              assessmentOpenDate != null ? DateFormat('dd MMM yyyy').format(assessmentOpenDate!) : '';
+
+          assessmentEndDateController.text =
+              assessmentEndDate != null ? DateFormat('dd MMM yyyy').format(assessmentEndDate!) : '';
+        });
       }
     }
+  } catch (e) {
+    debugPrint("Error fetching assessment details: $e");
   }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Assessment Page"),
+        title: const Text("Edit Assessment Page"),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -226,7 +230,7 @@ class _EditAssessmentState extends State<EditAssessment> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "Add New Assessment",
+                                  "Edit Assessment",
                                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
                                 ),
                                 const SizedBox(height: 8),
@@ -234,7 +238,7 @@ class _EditAssessmentState extends State<EditAssessment> {
                                   "Enter the assessment information below",
                                   style: TextStyle(fontSize: 16, color: Colors.black),
                                 ),
-                                const SizedBox(height: 32),
+                                // Assessment Dropdown
                                 FutureBuilder<List<String>>(
                                   future: assessmentListFuture,
                                   builder: (context, snapshot) {
@@ -244,12 +248,12 @@ class _EditAssessmentState extends State<EditAssessment> {
                                       return Text('Error: ${snapshot.error}');
                                     } else if (snapshot.hasData) {
                                       List<String> assessment = snapshot.data ?? [];
+
                                       return DropdownButtonFormField<String>(
+                                        value: assessmentNameController.text.isNotEmpty ? assessmentNameController.text : null,
                                         decoration: InputDecoration(
                                           labelText: "Assessment",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                           prefixIcon: const Icon(Icons.assignment),
                                         ),
                                         items: assessment.map<DropdownMenuItem<String>>((String value) {
@@ -260,7 +264,7 @@ class _EditAssessmentState extends State<EditAssessment> {
                                         }).toList(),
                                         onChanged: (String? newValue) {
                                           setState(() {
-                                            selectedAssessmentName = newValue ?? '';
+                                            assessmentName = newValue ?? '';
                                           });
                                         },
                                         validator: (value) {
@@ -274,7 +278,10 @@ class _EditAssessmentState extends State<EditAssessment> {
                                     return const Text('No Assessment found');
                                   },
                                 ),
+
                                 const SizedBox(height: 16),
+
+                                // Student ID Dropdown
                                 FutureBuilder<List<String>>(
                                   future: studentListFuture,
                                   builder: (context, snapshot) {
@@ -284,12 +291,12 @@ class _EditAssessmentState extends State<EditAssessment> {
                                       return Text('Error: ${snapshot.error}');
                                     } else if (snapshot.hasData) {
                                       List<String> student = snapshot.data ?? [];
+
                                       return DropdownButtonFormField<String>(
+                                        value: studIDController.text.isNotEmpty ? studIDController.text : null,
                                         decoration: InputDecoration(
                                           labelText: "Student ID",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                           prefixIcon: const Icon(Icons.person),
                                         ),
                                         items: student.map<DropdownMenuItem<String>>((String value) {
@@ -300,7 +307,7 @@ class _EditAssessmentState extends State<EditAssessment> {
                                         }).toList(),
                                         onChanged: (String? newValue) {
                                           setState(() {
-                                            selectedStudentID = newValue ?? '';
+                                            studID = newValue ?? '';
                                           });
                                         },
                                         validator: (value) {
@@ -311,11 +318,12 @@ class _EditAssessmentState extends State<EditAssessment> {
                                         },
                                       );
                                     }
-                                    return const Text('No studID found');
+                                    return const Text('No Student ID found');
                                   },
                                 ),
                                 const SizedBox(height: 16),
                                 DropdownButtonFormField<String>(
+                                  value: intakePeriodController.text.isEmpty ? null : intakePeriodController.text,
                                   decoration: InputDecoration(
                                     labelText: "Internship Intake Period",
                                     hintText: "Select the intake period",
@@ -333,7 +341,7 @@ class _EditAssessmentState extends State<EditAssessment> {
                                   }).toList(),
                                   onChanged: (String? newValue) {
                                     setState(() {
-                                      selectedIntakePeriod = newValue ?? '';
+                                      intakePeriod = newValue ?? '';
                                     });
                                   },
                                   validator: (value) {
@@ -344,37 +352,92 @@ class _EditAssessmentState extends State<EditAssessment> {
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                Text(
-                                  _selectedStartDate == null
-                                      ? "Assessment Start Date: No date selected"
-                                      : "Selected Date: ${DateFormat('yyyy-MM-dd').format(_selectedStartDate!)}",
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                                const SizedBox(height: 20),
-                                ElevatedButton(
-                                  onPressed: () => _pickStartDate(context),
-                                  child: const Text("Pick a Start Date"),
+                                // Assessment Start Date Display
+                                TextField(
+                                  controller: assessmentOpenDateController,
+                                  readOnly: true,
+                                  decoration: const InputDecoration(
+                                    labelText: "Assessment Start Date",
+                                    suffixIcon: Icon(Icons.calendar_today),
+                                  ),
+                                  onTap: () => _pickStartDate(context),
                                 ),
                                 const SizedBox(height: 16),
-                                Text(
-                                  _selectedEndDate == null
-                                      ? "Assessment End Date: No date selected"
-                                      : "Selected Date: ${DateFormat('yyyy-MM-dd').format(_selectedEndDate!)}",
-                                  style: const TextStyle(fontSize: 18),
+                                // Assessment End Date Display
+                                TextField(
+                                  controller: assessmentEndDateController,
+                                  readOnly: true,
+                                  decoration: const InputDecoration(
+                                    labelText: "Assessment End Date",
+                                    suffixIcon: Icon(Icons.calendar_today),
+                                  ),
+                                  onTap: () => _pickEndDate(context),
                                 ),
-                                const SizedBox(height: 20),
-                                ElevatedButton(
-                                  onPressed: () => _pickEndDate(context),
-                                  child: const Text("Pick a Due Date"),
-                                ),
-                                const SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    _buildButton("Add Assessment", Colors.black, saveData),
-                                    const SizedBox(width: 16),
-                                    _buildButton("Cancel", Colors.redAccent, () => Navigator.pop(context)),
-                                  ],
+                                const SizedBox(height: 16),
+                                // Save Button
+                                Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          if (_formKey.currentState?.validate() ?? false) {
+                                            try {
+                                              QuerySnapshot templateSnapshot = await FirebaseFirestore.instance
+                                                  .collection('Template')
+                                                  .where('templateTitle', isEqualTo: assessmentName)
+                                                  .get();
+
+                                              if (templateSnapshot.docs.isEmpty) {
+                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Template not found')));
+                                                return;
+                                              }
+
+                                              String templateID = templateSnapshot.docs.first.id;
+
+                                              var updatedassessmentData = {
+                                                'templateID': templateID,
+                                                'studID': studID,
+                                                'supervisorID': widget.userId,
+                                                'submissionURL': '',
+                                                'assessmentOpenDate': assessmentOpenDate,
+                                                'assessmentEndDate': assessmentEndDate,
+                                                'intakePeriod': intakePeriod,
+                                                'submissionDate': '',
+                                              };
+
+                                              await FirebaseFirestore.instance
+                                                  .collection('Assessment')
+                                                  .doc(widget.assessmentID)
+                                                  .update(updatedassessmentData);
+                                              
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assessment updated successfully')));
+                                              Navigator.pop(context, true);
+                                            } catch (e) {
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update assessment')));
+                                              debugPrint("Error updating assessment: $e");
+                                            }
+                                          }
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                          backgroundColor: Colors.black,
+                                        ),
+                                        child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context, true);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                        child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -389,17 +452,6 @@ class _EditAssessmentState extends State<EditAssessment> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildButton(String text, Color color, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-        backgroundColor: color,
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 16, color: Colors.white)),
     );
   }
 }
