@@ -49,15 +49,23 @@ class _AddAssessmentState extends State<AddAssessment> {
           pickedStartDate.month, 
           pickedStartDate.day,
         );
+        _selectedEndDate = null;
       });
     }
   }
 
   Future<void> _pickEndDate(BuildContext context) async {
+    if (_selectedStartDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a start date first.')),
+      );
+      return;
+    }
+
     DateTime? pickedEndDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2025),
+      initialDate: _selectedEndDate ?? _selectedStartDate!,
+      firstDate: _selectedStartDate!,
       lastDate: DateTime(2030),
     );
 

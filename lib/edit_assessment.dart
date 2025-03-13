@@ -55,16 +55,25 @@ class _EditAssessmentState extends State<EditAssessment> {
     if (pickedDate != null) {
       setState(() {
         assessmentOpenDate = pickedDate;
+        assessmentEndDate = null;
         assessmentOpenDateController.text = DateFormat('dd MMM yyyy').format(pickedDate);
       });
     }
   }
 
   Future<void> _pickEndDate(BuildContext context) async {
+    if (assessmentOpenDate == null) {
+      // Show a message if the start date is not selected yet
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a start date first.')),
+      );
+      return;
+    }
+
     DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: assessmentEndDate ?? DateTime.now(),
-      firstDate: DateTime(2025),
+      initialDate: assessmentEndDate ?? assessmentOpenDate!,
+      firstDate: assessmentOpenDate!,
       lastDate: DateTime(2030),
     );
 
