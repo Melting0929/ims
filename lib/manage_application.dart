@@ -36,7 +36,9 @@ class ManageApplicationTab extends State<ManageApplication> {
 @override
 void initState() {
   super.initState();
-  fetchAdminDetails();
+  fetchAdminDetails().then((_) {
+    _refreshData();
+  });
 }
 
   Future<void> _refreshData() async {
@@ -312,157 +314,157 @@ void initState() {
   }
 
   Widget _buildTab({
-  required String title,
-  required VoidCallback onRefresh,
-  required Future<List<Map<String, dynamic>>> future,
-  required Widget Function(List<Map<String, dynamic>>) builder,
-  required bool isStudentTab,
-}) {
-  return Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                bool isSmallScreen = constraints.maxWidth < 600;
-                return isSmallScreen
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButton<String>(
-                            hint: const Text("Filter by Status"),
-                            value: selectedStatus,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedStatus = newValue;
-                              });
-                            },
-                            items: ["Pending", "Approved", "Rejected"]
-                                .map((status) => DropdownMenuItem(
-                                      value: status,
-                                      child: Text(status),
-                                    ))
-                                .toList(),
-                          ),
-                          const SizedBox(height: 10),
-                          ElevatedButton.icon(
-                            onPressed: onRefresh,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
+    required String title,
+    required VoidCallback onRefresh,
+    required Future<List<Map<String, dynamic>>> future,
+    required Widget Function(List<Map<String, dynamic>>) builder,
+    required bool isStudentTab,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isSmallScreen = constraints.maxWidth < 600;
+                  return isSmallScreen
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              title,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                            icon: const Icon(Icons.refresh, color: Colors.white),
-                            label: const Text("Refresh"),
-                          ),
-                        ],
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                            const SizedBox(height: 12),
+                            DropdownButton<String>(
+                              hint: const Text("Filter by Status"),
+                              value: selectedStatus,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedStatus = newValue;
+                                });
+                              },
+                              items: ["Pending", "Approved", "Rejected"]
+                                  .map((status) => DropdownMenuItem(
+                                        value: status,
+                                        child: Text(status),
+                                      ))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              onPressed: onRefresh,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                              ),
+                              icon: const Icon(Icons.refresh, color: Colors.white),
+                              label: const Text("Refresh"),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              title,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            Row(
+                              children: [
+                                const Text(
+                                  "Approve Status:",
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                          ),
-                          Row(
-                            children: [
-                              const Text(
-                                "Approve Status:",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.black, width: 1.5),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  hint: const Text("Filter by Status"),
-                                  value: selectedStatus,
-                                  onChanged: (String? newValue) {
-                                    setState(() {
-                                      selectedStatus = newValue;
-                                    });
-                                  },
-                                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                                  dropdownColor: Colors.white,
-                                  style: const TextStyle(color: Colors.black, fontSize: 14),
-                                  items: ["All", "Pending", "Approve", "Reject"]
-                                      .map((status) => DropdownMenuItem(
-                                            value: status,
-                                            child: Text(status),
-                                          ))
-                                      .toList(),
+                                const SizedBox(width: 10),
+                                Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.black, width: 1.5),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    hint: const Text("Filter by Status"),
+                                    value: selectedStatus,
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        selectedStatus = newValue;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                                    dropdownColor: Colors.white,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                    items: ["All", "Pending", "Approve", "Reject"]
+                                        .map((status) => DropdownMenuItem(
+                                              value: status,
+                                              child: Text(status),
+                                            ))
+                                        .toList(),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton.icon(
-                                onPressed: onRefresh,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black,
-                                  foregroundColor: Colors.white,
-                                  elevation: 2,
+                                const SizedBox(width: 10),
+                                ElevatedButton.icon(
+                                  onPressed: onRefresh,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    foregroundColor: Colors.white,
+                                    elevation: 2,
+                                  ),
+                                  icon: const Icon(Icons.refresh, color: Colors.white),
+                                  label: const Text("Refresh"),
                                 ),
-                                icon: const Icon(Icons.refresh, color: Colors.white),
-                                label: const Text("Refresh"),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-              },
+                              ],
+                            ),
+                          ],
+                        );
+                },
+              ),
             ),
           ),
         ),
-      ),
-      Expanded(
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            }
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text("Error: ${snapshot.error}"));
+              }
 
-            List<Map<String, dynamic>> filteredData = snapshot.data ?? [];
+              List<Map<String, dynamic>> filteredData = snapshot.data ?? [];
 
-            // Apply filtering only if selectedStatus is not "All"
-            if (selectedStatus != null && selectedStatus!.isNotEmpty && selectedStatus != "All") {
-              String statusKey = isStudentTab ? 'externalStatus' : 'approvalStatus';
-              filteredData = filteredData
-                  .where((entry) => entry[statusKey]?.toString().toLowerCase() == selectedStatus!.toLowerCase())
-                  .toList();
-            }
+              // Apply filtering only if selectedStatus is not "All"
+              if (selectedStatus != null && selectedStatus!.isNotEmpty && selectedStatus != "All") {
+                String statusKey = isStudentTab ? 'externalStatus' : 'approvalStatus';
+                filteredData = filteredData
+                    .where((entry) => entry[statusKey]?.toString().toLowerCase() == selectedStatus!.toLowerCase())
+                    .toList();
+              }
 
-            return builder(filteredData);
-          },
+              return builder(filteredData);
+            },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -471,7 +473,7 @@ void initState() {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
-          title: const Text("Manage Job Posting Page"),
+          title: const Text("Manage Application Page"),
           bottom:TabBar(
             tabs: tabs.map((tab) => Tab(text: tab)).toList(),
           ),

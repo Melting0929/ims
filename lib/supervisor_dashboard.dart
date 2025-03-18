@@ -21,7 +21,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
   String supervisorID = "Loading...";
   String selectedMenu = "Dashboard";
 
-  String? selectedCompany;
+  String selectedCompany = 'All';
   String? selectedCompanyID;
   Map<String, String> companyMap = {};
   List<String> companyNames = [];
@@ -443,7 +443,6 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: selectedIntake,
-                                hint: const Text("Filter by Intake Period"),
                                 icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                                 dropdownColor: Colors.white,
                                 style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -483,7 +482,6 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: selectedCompany,
-                                hint: const Text("Filter by Company"),
                                 icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                                 dropdownColor: Colors.white,
                                 style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -495,7 +493,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                                 }).toList(),
                                 onChanged: (value) {
                                   setState(() {
-                                    selectedCompany = value;
+                                    selectedCompany = value!;
                                     selectedCompanyID = companyMap[value];
                                   });
                                   fetchStudents();

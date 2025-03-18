@@ -47,7 +47,9 @@ class ManageUserTab extends State<ManageUser> {
 @override
 void initState() {
   super.initState();
-  fetchAdminDetails();
+  fetchAdminDetails().then((_) {
+    _refreshData();
+  });
 }
 
   Future<void> _refreshData() async {
@@ -145,13 +147,15 @@ void initState() {
 
   Future<List<Map<String, dynamic>>> _getStudentData() async {
   try {
-    QuerySnapshot studentSnapshot =
-        await FirebaseFirestore.instance.collection('Student').get();
+    QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
+        .collection('Student')
+        .get();
+
     List<Map<String, dynamic>> students = studentSnapshot.docs.map((doc) {
       return doc.data() as Map<String, dynamic>;
     }).toList();
 
-    List<Map<String, dynamic>> retrieveStudentData = [];
+    List<Map<String, dynamic>> userStudent = [];
 
     for (var student in students) {
       var userID = student['userID'];
@@ -203,7 +207,7 @@ void initState() {
         }
       }
 
-      retrieveStudentData.add({
+      Map<String, dynamic> studentData = {
         'userID': student['userID'] ?? '',
         'userType': user['userType'] ?? '',
         'studID': student['studID'] ?? '',
@@ -218,10 +222,16 @@ void initState() {
         'companyName': companyName,
         'supervisorName': supervisorName,
         'intakePeriod': student['intakePeriod'] ?? '',
-      });
+      };
+
+      if ((selectedJobTitle == 'All' || studentData['jobTitle'] == selectedJobTitle) &&
+          (selectedApplicationStatus == 'All' || studentData['applicationStatus'] == selectedApplicationStatus) &&
+          (selectedInterviewStatus == 'All' || studentData['interviewStatus'] == selectedInterviewStatus)) {
+        userStudent.add(studentData);
+      }
     }
 
-    return retrieveStudentData;
+    return userStudent;
   } catch (e) {
     print('Error retrieving student data: $e');
     return [];

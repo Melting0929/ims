@@ -9,7 +9,7 @@ import 'download_guideline.dart';
 import 'manage_cjob.dart';
 import 'color.dart';
 
-// Dropdown Button issue
+// Dropdown Button 'None' for Interview Status Used or Not Used
 class ManageApplicant extends StatefulWidget {
   final String userId;
   const ManageApplicant({super.key, required this.userId});
@@ -51,23 +51,16 @@ class ManageApplicantTab extends State<ManageApplicant> {
 void initState() {
   super.initState();
   fetchCompanyDetails().then((_) {
-      fetchJobTitles();
-    });
+    fetchJobTitles();
+    _refreshData();
+  });
 }
 
   Future<void> _refreshData() async {
     List<Map<String, dynamic>> fetchApplicantData = await _getApplicantData();
 
     setState(() {
-      applicantData = fetchApplicantData.where((applicant) {
-        bool jobTitleMatch = selectedJobTitle == null || applicant['jobTitle'] == selectedJobTitle;
-        bool applicationStatusMatch = selectedApplicationStatus == 'All' || applicant['applicationStatus'] == selectedApplicationStatus;
-        bool interviewStatusMatch = selectedInterviewStatus == 'All' ||
-            (selectedInterviewStatus == 'None' && (applicant['interviewStatus'] == null || applicant['interviewStatus'].isEmpty)) ||
-            applicant['interviewStatus'] == selectedInterviewStatus;
-
-        return jobTitleMatch && applicationStatusMatch && interviewStatusMatch;
-      }).toList();
+      applicantData = fetchApplicantData;
     });
   }
 
@@ -197,8 +190,10 @@ void initState() {
 
   Future<List<Map<String, dynamic>>> _getApplicantData() async {
     try {
-      QuerySnapshot applicantSnapshot =
-          await FirebaseFirestore.instance.collection('Application').get();
+      QuerySnapshot applicantSnapshot = await FirebaseFirestore.instance
+          .collection('Application')
+          .get();
+
       List<Map<String, dynamic>> applications = applicantSnapshot.docs.map((doc) {
         return {
           'applicationID': doc.id,
@@ -206,7 +201,7 @@ void initState() {
         };
       }).toList();
 
-      List<Map<String, dynamic>> retrieveApplicantData = [];
+      List<Map<String, dynamic>> applicant = [];
 
       for (var application in applications) {
         var jobID = application['jobID'];
@@ -228,7 +223,7 @@ void initState() {
         if (!userSnapshot.exists) continue;
         var user = userSnapshot.data() as Map<String, dynamic>;
 
-        retrieveApplicantData.add({
+        Map<String, dynamic> applicanttData = {
           'applicationID': application['applicationID'] ?? '',
           'studName': user['name'] ?? '',
           'jobTitle': job['jobTitle'] ?? '',
@@ -236,10 +231,16 @@ void initState() {
           'jobAllowance': job['jobAllowance'] ?? '',
           'applicationStatus': application['applicationStatus'] ?? '',
           'interviewStatus': application['interviewStatus'] ?? '',
-        });
+        };
+
+        if ((selectedJobTitle == 'All' || applicanttData['jobTitle'] == selectedJobTitle) &&
+            (selectedApplicationStatus == 'All' || applicanttData['applicationStatus'] == selectedApplicationStatus) &&
+            (selectedInterviewStatus == 'All' || applicanttData['interviewStatus'] == selectedInterviewStatus)) {
+          applicant.add(applicanttData);
+        }
       }
 
-      return retrieveApplicantData;
+      return applicant;
     } catch (e) {
       print('Error retrieving application data: $e');
       return [];

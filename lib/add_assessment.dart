@@ -86,21 +86,12 @@ class _AddAssessmentState extends State<AddAssessment> {
           .collection('Template')
           .get();
 
-      // Retrieve document IDs and template titles
-      List<Map<String, String>> templates = docSnapshot.docs.map((doc) {
-        return {
-          'templateID': doc.id, 
-          'templateTitle': doc['templateTitle']?.toString() ?? '',
-        };
-      }).toList();
+      List<String> templateTitles = docSnapshot.docs
+          .map((doc) => doc['templateTitle']?.toString() ?? '')
+          .where((title) => title.isNotEmpty)
+          .toList();
 
-      // Sort by document ID numerically (if they are numbers)
-      templates.sort((a, b) => int.parse(a['templateID']!).compareTo(int.parse(b['templateID']!)));
-
-      // Extract only the template titles in sorted order
-      List<String> sortedTemplateTitles = templates.map((template) => template['templateTitle']!).toList();
-
-      return sortedTemplateTitles;
+      return templateTitles;
     } catch (e) {
       print('Error retrieving assessment data: $e');
       return [];

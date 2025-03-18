@@ -107,73 +107,18 @@ void main() async {
 
   await addTemplate(
     templateID: '2',
-    templateTitle: 'Weekly Report 1',
-    templateDesc: 'Weekly Report 1. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '3',
-    templateTitle: 'Weekly Report 2',
-    templateDesc: 'Weekly Report 2. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '4',
-    templateTitle: 'Weekly Report 3',
-    templateDesc: 'Weekly Report 3. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '5',
-    templateTitle: 'Weekly Report 4',
-    templateDesc: 'Weekly Report 4. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '6',
-    templateTitle: 'Weekly Report 5',
-    templateDesc: 'Weekly Report 5. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '7',
-    templateTitle: 'Weekly Report 6',
-    templateDesc: 'Weekly Report 6. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '8',
-    templateTitle: 'Weekly Report 7',
-    templateDesc: 'Weekly Report 7. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '9',
-    templateTitle: 'Weekly Report 8',
-    templateDesc: 'Weekly Report 8. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '10',
-    templateTitle: 'Weekly Report 9',
-    templateDesc: 'Weekly Report 9. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '11',
-    templateTitle: 'Weekly Report 10',
-    templateDesc: 'Weekly Report 10. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '12',
-    templateTitle: 'Weekly Report 11',
-    templateDesc: 'Weekly Report 11. Please filled out the form and submit it by the end of the week.',
-  );
-  await addTemplate(
-    templateID: '13',
-    templateTitle: 'Weekly Report 12',
-    templateDesc: 'Weekly Report 12. Please filled out the form and submit it by the end of the week.',
+    templateTitle: 'Log Report',
+    templateDesc: 'Log Report. Please filled out the form and submit it by the end of the week.',
   );
   
   await addTemplate(
-    templateID: '14',
+    templateID: '3',
     templateTitle: 'Final Report',
     templateDesc: 'Final Report. Please submit it by the end of the internship.',
   );
 
   await addTemplate(
-    templateID: '15',
+    templateID: '4',
     templateTitle: 'Student Evaluation Form',
     templateDesc: 'Please fill out the form and submit it by the end of the internship.',
   );

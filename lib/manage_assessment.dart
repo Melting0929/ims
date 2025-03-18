@@ -33,10 +33,28 @@ class ManageAssessmentTab extends State<ManageAssessment> {
 
   List<Map<String, dynamic>> assessmentData = [];
 
+  String submissionStatus = '';
+  List<String> assessmentNames = ['All'];
+
+  String selectedSubmissionStatus = 'All';
+  String selectedStudentName = 'All';
+  String selectedAssessmentName = 'All';
+  String selectedIntakePeriod = 'All';
+
+  List<String> studentNames = [];
+
   @override
   void initState() {
     super.initState();
-    fetchSupervisorDetails();
+    fetchSupervisorDetails().then((_) {
+      _refreshData();
+      fetchStudentNames().then((names) {
+        setState(() {
+          studentNames = names;
+        });
+      });
+      loadAssessmentNames();
+    });
   }
 
   Future<void> _refreshData() async {
@@ -142,7 +160,11 @@ class ManageAssessmentTab extends State<ManageAssessment> {
 
   Future<List<Map<String, dynamic>>> _getAssessmentData() async {
     try {
-      QuerySnapshot assessmentSnapshot = await FirebaseFirestore.instance.collection('Assessment').get();
+      QuerySnapshot assessmentSnapshot = await FirebaseFirestore.instance
+          .collection('Assessment')
+          .where("supervisorID", isEqualTo: widget.userId)
+          .get();
+      
       List<Map<String, dynamic>> assessments = [];
 
       DateTime now = DateTime.now();
@@ -152,12 +174,11 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         DateTime endDate = endDateTimestamp.toDate(); 
 
         // Determine submission status
-        String submissionStatus = endDate.isBefore(now) ? 'Due' : 'Active';
+        submissionStatus = endDate.isBefore(now) ? 'Due' : 'Active';
 
         Map<String, dynamic> assessmentData = {
           'assessmentID': assessment.id,
           'templateID': assessment['templateID'] ?? '',
-          'supervisorID': assessment['supervisorID'] ?? '',
           'studID': assessment['studID'] ?? '',
           'intakePeriod': assessment['intakePeriod'] ?? '',
           'submissionURL': assessment['submissionURL'] ?? '',
@@ -166,7 +187,6 @@ class ManageAssessmentTab extends State<ManageAssessment> {
           'assessmentEndDate': assessment['assessmentEndDate'] ?? '',
           'submissionStatus': submissionStatus, 
           'templateTitle': '',
-          'supervisorName': '',
           'studentName': '',
         };
 
@@ -179,29 +199,6 @@ class ManageAssessmentTab extends State<ManageAssessment> {
           
           if (templateSnapshot.exists) {
             assessmentData['templateTitle'] = templateSnapshot['templateTitle'] ?? '';
-          }
-        }
-
-        // Retrieve Supervisor userID and fetch Supervisor Name
-        if (assessmentData['supervisorID'].isNotEmpty) {
-          DocumentSnapshot supervisorSnapshot = await FirebaseFirestore.instance
-              .collection('Supervisor')
-              .doc(assessmentData['supervisorID'])
-              .get();
-          
-          if (supervisorSnapshot.exists) {
-            String userID = supervisorSnapshot['userID'] ?? '';
-
-            if (userID.isNotEmpty) {
-              DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(userID)
-                  .get();
-              
-              if (userSnapshot.exists) {
-                assessmentData['supervisorName'] = userSnapshot['name'] ?? '';
-              }
-            }
           }
         }
 
@@ -227,17 +224,68 @@ class ManageAssessmentTab extends State<ManageAssessment> {
             }
           }
         }
-
-        assessments.add(assessmentData);
+        // Filter based on selected student name
+        if ((selectedStudentName == 'All' || assessmentData['studentName'] == selectedStudentName) &&
+            (selectedAssessmentName == 'All' || assessmentData['templateTitle'] == selectedAssessmentName) &&
+            (selectedSubmissionStatus == 'All' || assessmentData['submissionStatus'] == selectedSubmissionStatus)) {
+          assessments.add(assessmentData);
+        }
       }
-
       return assessments;
+      
     } catch (e) {
       print('Error retrieving assessment data: $e');
       return [];
     }
   }
-    
+
+  Future<void> loadAssessmentNames() async {
+    List<Map<String, dynamic>> assessments = await _getAssessmentData();
+
+    // Extract `templateTitle`, cast to String, and remove duplicates
+    List<String> extractedTitles = assessments
+        .map((assessment) => (assessment['templateTitle'] ?? '') as String)
+        .where((title) => title.isNotEmpty)
+        .toSet()
+        .toList();
+
+    setState(() {
+      assessmentNames = ['All', ...extractedTitles];
+    });
+  } 
+  
+  Future<List<String>> fetchStudentNames() async {
+    try {
+      QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
+          .collection('Student')
+          .where('supervisorID', isEqualTo: supervisorID)
+          .get();
+
+      List<String> studentNames = [];
+
+      for (var student in studentSnapshot.docs) {
+        String userID = student['userID'] ?? '';
+
+        if (userID.isNotEmpty) {
+          DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(userID)
+              .get();
+
+          if (userSnapshot.exists) {
+            String studentName = userSnapshot['name'] ?? '';
+            studentNames.add(studentName);
+          }
+        }
+      }
+
+      return studentNames;
+    } catch (e) {
+      print('Error retrieving student names: $e');
+      return [];
+    }
+  }
+  
   Widget _buildTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
@@ -466,6 +514,113 @@ class ManageAssessmentTab extends State<ManageAssessment> {
                         icon: const Icon(Icons.assignment_add, color: Colors.black),
                         label: const Text("Add Assessment", style: TextStyle(color: Colors.black)),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Student Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedStudentName,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['All', ...studentNames].map((name) {
+                              return DropdownMenuItem(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedStudentName = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Assessment Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedAssessmentName,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: assessmentNames.map((name) {
+                              return DropdownMenuItem(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedAssessmentName = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Submission Status:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedSubmissionStatus,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ["All", "Active", "Due"].map((title) {
+                              return DropdownMenuItem(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedSubmissionStatus = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
                     ],
                   ),
                 ),

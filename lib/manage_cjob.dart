@@ -475,38 +475,66 @@ void initState() {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(width: 10),
-                    DropdownButton<String>(
-                      value: selectedJobTitle,
-                      onChanged: (newValue) {
-                        setState(() {
-                          selectedJobTitle = newValue;
-                        });
-                      },
-                      items: jobTitles.map((title) {
-                        return DropdownMenuItem(
-                          value: title,
-                          child: Text(title),
-                        );
-                      }).toList(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedJobTitle,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedJobTitle = value;
+                            });
+                            _refreshData();
+                          },
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(color: Colors.black, fontSize: 14),
+                          items: jobTitles.map((title) {
+                            return DropdownMenuItem<String>(
+                              value: title,
+                              child: Text(title),
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 16),
                     const Text(
                       "Job Status:",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(width: 10),
-                    DropdownButton<String>(
-                      value: selectedJobStatus,
-                      onChanged: (newValue) {
-                        setState(() {
-                          selectedJobStatus = newValue;
-                        });
-                      },
-                      items: jobStatuses.map((status) {
-                        return DropdownMenuItem(
-                          value: status,
-                          child: Text(status),
-                        );
-                      }).toList(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedJobStatus,
+                          onChanged: (newValue) {
+                            setState(() {
+                              selectedJobStatus = newValue;
+                            });
+                          },
+                          items: jobStatuses.map((status) {
+                            return DropdownMenuItem(
+                              value: status,
+                              child: Text(status),
+                            );
+                          }).toList(),
+                          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(color: Colors.black, fontSize: 14),
+                        ),
+                      ),
                     ),
                   ],
                 ),
