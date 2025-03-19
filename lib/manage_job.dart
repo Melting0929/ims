@@ -33,13 +33,20 @@ class ManageJobTab extends State<ManageJob> {
   List<Map<String, dynamic>> externalData = [];
   List<Map<String, dynamic>> registeredData = [];
 
-  String? selectedJobTitle;
-  String? selectedJobStatus;
+  String selectedJobTitle = 'All';
+  String selectedJobStatus = 'All';
+  String selectedExternal = 'All';
+
+  String selectedRJobTitle = 'All';
+  String selectedRJobStatus = 'All';
+  String selectedRegistered = 'All';
 
 @override
 void initState() {
   super.initState();
-  fetchAdminDetails();
+  fetchAdminDetails().then((_) {
+    _refreshData();
+  });
 }
 
   Future<void> _refreshData() async {
@@ -157,7 +164,7 @@ void initState() {
         var name = user['name'];
 
         if (userType == 'Admin') {
-          retrieveExternalData.add({
+          Map<String, dynamic> externalData = {
             'jobID': jobID,
             'jobTitle': external['jobTitle'] ?? '',
             'jobDesc': external['jobDesc'] ?? '',
@@ -167,9 +174,15 @@ void initState() {
             'jobStatus': external['jobStatus'] ?? '',
             'numApplicant': external['numApplicant'] ?? '',
             'userID': userID,
-            'name': name,
+            'name': name, // 1. findout the company name
             'tags': external['tags'] ?? [], 
-          });
+          };
+
+          if ((selectedJobTitle == 'All' || externalData['jobTitle'] == selectedJobTitle) && 
+              (selectedJobStatus == 'All' || externalData['jobStatus'] == selectedJobStatus) &&
+              (selectedExternal == 'All' || externalData['name'] == selectedExternal)) {
+            retrieveExternalData.add(externalData); // change to company name
+          }
         }
       }
 
@@ -212,7 +225,7 @@ void initState() {
         var name = company != null ? company['companyName'] : 'Unknown';
 
         if (userType == 'Company'){
-          retrieveRegisteredData.add({
+          Map<String, dynamic> registerData = {
             'jobID': jobID,
             'jobTitle': register['jobTitle'] ?? '',
             'jobDesc': register['jobDesc'] ?? '',
@@ -224,7 +237,13 @@ void initState() {
             'userID': userID,
             'name': name,
             'tags': register['tags'] ?? [], 
-          });
+          };
+
+          if ((selectedRJobTitle == 'All' || registerData['jobTitle'] == selectedRJobTitle) && 
+              (selectedRJobStatus == 'All' || registerData['jobStatus'] == selectedRJobStatus) &&
+              (selectedRegistered == 'All' || registerData['name'] == selectedRegistered)) {
+            retrieveRegisteredData.add(registerData);
+          }
         }
       }
 
@@ -299,6 +318,7 @@ void initState() {
     required VoidCallback onRefresh,
     required Future<List<Map<String, dynamic>>> future,
     required Widget Function(List<Map<String, dynamic>>) builder,
+    List<Widget>? dropdowns,
   }) {
     return Column(
       children: [
@@ -392,6 +412,13 @@ void initState() {
                 },
               ),
             ),
+          ),
+        ),
+        if (dropdowns != null) 
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: dropdowns,
           ),
         ),
         Expanded(
@@ -575,6 +602,9 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getExternalData(),
                     builder: _buildTable,
+                    dropdowns: [
+
+                    ]
                   ),
                   _buildTab(
                     title: "Manage Registered Companies Job",
@@ -588,6 +618,9 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getRegisteredData(),
                     builder: _buildTable,
+                    dropdowns: [
+
+                    ]
                   ),
                 ],
               ),

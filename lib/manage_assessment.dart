@@ -556,6 +556,39 @@ class ManageAssessmentTab extends State<ManageAssessment> {
                       ),
                       const SizedBox(width: 30),
                       const Text(
+                        "Intake Period:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedIntakePeriod,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'].map((intake) {
+                              return DropdownMenuItem(
+                                value: intake,
+                                child: Text(intake),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedIntakePeriod = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
                         "Assessment Name:",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),

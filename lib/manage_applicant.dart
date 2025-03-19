@@ -223,7 +223,7 @@ void initState() {
         if (!userSnapshot.exists) continue;
         var user = userSnapshot.data() as Map<String, dynamic>;
 
-        Map<String, dynamic> applicanttData = {
+        Map<String, dynamic> applicantData = {
           'applicationID': application['applicationID'] ?? '',
           'studName': user['name'] ?? '',
           'jobTitle': job['jobTitle'] ?? '',
@@ -233,10 +233,10 @@ void initState() {
           'interviewStatus': application['interviewStatus'] ?? '',
         };
 
-        if ((selectedJobTitle == 'All' || applicanttData['jobTitle'] == selectedJobTitle) &&
-            (selectedApplicationStatus == 'All' || applicanttData['applicationStatus'] == selectedApplicationStatus) &&
-            (selectedInterviewStatus == 'All' || applicanttData['interviewStatus'] == selectedInterviewStatus)) {
-          applicant.add(applicanttData);
+        if ((selectedJobTitle == 'All' || applicantData['jobTitle'] == selectedJobTitle) &&
+            (selectedApplicationStatus == 'All' || applicantData['applicationStatus'] == selectedApplicationStatus) &&
+            (selectedInterviewStatus == 'All' || applicantData['interviewStatus'] == selectedInterviewStatus)) {
+          applicant.add(applicantData);
         }
       }
 

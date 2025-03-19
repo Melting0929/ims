@@ -21,7 +21,6 @@ import 'add_company.dart';
 import 'add_student.dart';
 import 'add_supervisor.dart';
 
-// Dropdown Menu
 class ManageUser extends StatefulWidget {
   final String userId;
   const ManageUser({super.key, required this.userId});
@@ -44,11 +43,43 @@ class ManageUserTab extends State<ManageUser> {
   List<Map<String, dynamic>> studentData = [];
   List<Map<String, dynamic>> companyData = [];
 
+  String selectedDept = 'All';
+  String selectedIntakePeriod= 'All';
+  String selectedSupervisorName = 'All';
+  String selectedCompanyName = 'All';
+
+  String selectedCompany = 'All';
+  String selectedApprovalStatus = 'All';
+
+  String selectedSupervisor = 'All';
+  String selectedSDept = 'All';
+
+  String selectedAdmin = 'All';
+
+  List<String> supervisorNames = [];
+  List<String> companyNames = [];
+  List<String> adminNames = [];
+
 @override
 void initState() {
   super.initState();
   fetchAdminDetails().then((_) {
     _refreshData();
+    fetchSupervisorList().then((supervisor) {
+      setState(() {
+        supervisorNames = supervisor;
+      });
+    });
+    fetchAdminList().then((admin) {
+      setState(() {
+        adminNames = admin;
+      });
+    });
+    fetchCompanyNames().then((company) {
+      setState(() {
+        companyNames = company;
+      });
+    });
   });
 }
 
@@ -145,6 +176,80 @@ void initState() {
     }
   }
 
+  Future<List<String>> fetchAdminList() async {
+    try {
+      QuerySnapshot adminSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('userType', isEqualTo: 'Admin')
+          .get();
+
+      List<String> adminrNames = [];
+
+      for (var adminDoc in adminSnapshot.docs) {
+        if (adminDoc.exists) {
+          String name = adminDoc['name'].toString();
+          adminrNames.add(name);
+        }
+      }
+
+      adminrNames.insert(0, 'All');
+      
+      return adminrNames;
+    } catch (e) {
+      debugPrint("Error fetching admin details: $e");
+      return ['No Admin'];
+    }
+  }
+
+  Future<List<String>> fetchSupervisorList() async {
+    try {
+      QuerySnapshot supervisorSnapshot = await FirebaseFirestore.instance
+          .collection('Supervisor')
+          .get();
+
+      List<String> supervisorNames = [];
+
+      for (var supervisorDoc in supervisorSnapshot.docs) {
+        String userID = supervisorDoc['userID'];
+
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userID)
+            .get();
+        
+        if (userDoc.exists) {
+          String name = userDoc['name'].toString();
+          supervisorNames.add(name);
+        }
+      }
+
+      supervisorNames.insert(0, 'All');
+      
+      return supervisorNames;
+    } catch (e) {
+      print('Error fetching supervisors: $e');
+      return ['No Supervisor'];
+    }
+  }
+
+  Future<List<String>> fetchCompanyNames() async {
+    try {
+      QuerySnapshot companySnapshot = await FirebaseFirestore.instance
+          .collection('Company')
+          .get();
+      List<String> companyNames = companySnapshot.docs
+          .map((doc) => doc['companyName'].toString())
+          .toList();
+      
+      companyNames.insert(0, 'All');
+      
+      return companyNames;
+    } catch (e) {
+      print('Error fetching companies: $e');
+      return ['No Working Company'];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _getStudentData() async {
   try {
     QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
@@ -224,9 +329,10 @@ void initState() {
         'intakePeriod': student['intakePeriod'] ?? '',
       };
 
-      if ((selectedJobTitle == 'All' || studentData['jobTitle'] == selectedJobTitle) &&
-          (selectedApplicationStatus == 'All' || studentData['applicationStatus'] == selectedApplicationStatus) &&
-          (selectedInterviewStatus == 'All' || studentData['interviewStatus'] == selectedInterviewStatus)) {
+      if ((selectedDept == 'All' || studentData['dept'] == selectedDept) &&
+          (selectedCompanyName == 'All' || studentData['companyName'] == selectedCompanyName || (studentData['companyName'] == null && selectedCompanyName == 'No Working Company')) &&
+          (selectedIntakePeriod == 'All' || studentData['intakePeriod'] == selectedIntakePeriod) &&
+          (selectedSupervisorName == 'All' || studentData['supervisorName'] == selectedSupervisorName || (studentData['supervisorName'] == null && selectedSupervisorName == 'No Supervisor'))) {
         userStudent.add(studentData);
       }
     }
@@ -253,7 +359,7 @@ void initState() {
         var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
         var user = userSnapshot.data() as Map<String, dynamic>;
 
-        retrieveCompanyData.add({
+        Map<String, dynamic> companyData = {
           'userID': company['userID'] ?? '',
           'userType': user['userType'] ?? '',
           'name': user['name'] ?? '',
@@ -272,7 +378,12 @@ void initState() {
           'logoURL': company['logoURL'] ?? '',
           'pContactJobTitle': company['pContactJobTitle'] ?? '',
           'approvalStatus': company['approvalStatus'] ?? '',
-        });
+        };
+
+        if ((selectedApprovalStatus == 'All' || companyData['approvalStatus'] == selectedApprovalStatus) &&
+            (selectedCompany == 'All' || companyData['companyName'] == selectedCompany)) {
+          retrieveCompanyData.add(companyData);
+        }
       }
 
       return retrieveCompanyData;
@@ -297,7 +408,7 @@ void initState() {
         var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
         var user = userSnapshot.data() as Map<String, dynamic>;
 
-        retrieveSupervisorData.add({
+        Map<String, dynamic> supervisorData = {
           'userID': supervisor['userID'] ?? '',
           'userType': user['userType'] ?? '',
           'supervisorID': supervisor['supervisorID'] ?? '',
@@ -306,7 +417,12 @@ void initState() {
           'password': user['password'] ?? '',  
           'contactNo': user['contactNo'] ?? '',    
           'dept': supervisor['dept'] ?? '',     
-        });
+        };
+
+        if ((selectedSDept == 'All' || supervisorData['dept'] == selectedSDept) && 
+            (selectedSupervisor == 'All' || supervisorData['name'] == selectedSupervisor)) {
+          retrieveSupervisorData.add(supervisorData);
+        }
       }
 
       return retrieveSupervisorData;
@@ -331,14 +447,18 @@ void initState() {
         var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
         var user = userSnapshot.data() as Map<String, dynamic>;
 
-        retrieveAdminData.add({
+        Map<String, dynamic> adminData = {
           'userID': admin['userID'] ?? '',
           'name': user['name'] ?? '',
           'email': user['email'] ?? '',
           'contactNo': user['contactNo'] ?? '',
           'password': user['password'] ?? '',
           'userType': user['userType'] ?? '',
-        });
+        };
+
+        if ((selectedAdmin == 'All' || adminData['name'] == selectedAdmin)) {
+          retrieveAdminData.add(adminData);
+        }
       }
 
       return retrieveAdminData;
@@ -525,6 +645,7 @@ void initState() {
     required VoidCallback onRefresh,
     required Future<List<Map<String, dynamic>>> future,
     required Widget Function(List<Map<String, dynamic>>) builder,
+    List<Widget>? dropdowns,
   }) {
     return Column(
       children: [
@@ -588,6 +709,7 @@ void initState() {
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
+                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 ElevatedButton.icon(
@@ -620,6 +742,14 @@ void initState() {
             ),
           ),
         ),
+        if (dropdowns != null) 
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: dropdowns,
+          ),
+        ),
+        const SizedBox(height: 12),
         Expanded(
           child: _buildFutureTable(
             future: future,
@@ -829,6 +959,139 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getStudentData(),
                     builder: _buildStudentTable,
+                    dropdowns: [
+                      const Text(
+                        "Department:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedDept,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedDept = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['All','Engineering','IT','Business','Marketing'].map((dept) {
+                              return DropdownMenuItem<String>(
+                                value: dept,
+                                child: Text(dept),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Supervisor Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedSupervisorName,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedSupervisorName = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['No Supervisor', ...supervisorNames].map((name) {
+                              return DropdownMenuItem<String>(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Company Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedCompanyName,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedCompanyName = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['No Working Company', ...companyNames].map((name) {
+                              return DropdownMenuItem<String>(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Intake Period:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedIntakePeriod,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['All', 'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'].map((intake) {
+                              return DropdownMenuItem(
+                                value: intake,
+                                child: Text(intake),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedIntakePeriod = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   _buildTab(
                     title: "Registered & External Company Management",
@@ -836,6 +1099,73 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getCompanyData(),
                     builder: _buildCompanyTable,
+                    dropdowns: [
+                      const Text(
+                        "Company Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedCompany,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedCompany = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: companyNames.map((name) {
+                              return DropdownMenuItem<String>(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Approval Status:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedApprovalStatus,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ["All", "Approve", "Pending"].map((title) {
+                              return DropdownMenuItem(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedApprovalStatus = newValue!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ]
                   ),
                   _buildTab(
                     title: "Staff Management",
@@ -843,6 +1173,73 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getSupervisorData(), 
                     builder: _buildSupervisorTable,
+                    dropdowns: [
+                      const Text(
+                        "Supervisor Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedSupervisor,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedSupervisor = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: supervisorNames.map((name) {
+                              return DropdownMenuItem<String>(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Department:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedSDept,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedSDept = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ['All','Engineering','IT','Business','Marketing'].map((dept) {
+                              return DropdownMenuItem<String>(
+                                value: dept,
+                                child: Text(dept),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ]
                   ),
                   _buildTab(
                     title: "Admin Management",
@@ -850,6 +1247,40 @@ void initState() {
                     onRefresh: _refreshData,
                     future: _getAdminData(),
                     builder: _buildAdminTable,
+                    dropdowns: [
+                      const Text(
+                        "Admin Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedAdmin,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedAdmin = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: adminNames.map((name) {
+                              return DropdownMenuItem<String>(
+                                value: name,
+                                child: Text(name),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ]
                   ),
                 ],
               ),
