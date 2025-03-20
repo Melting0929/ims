@@ -3,7 +3,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+// companyID & contact no. validation
 class AddCompanyPage extends StatefulWidget {
   final String userType;
   const AddCompanyPage({super.key, required this.userType});
@@ -44,7 +44,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       Map<String, dynamic> userData = {
         'name': placementContactNameController.text.trim(),
         'email': placementContactEmailController.text.trim(),
-        'contactNo': companyContactNoController.text.trim(),
+        'contactNo': companyContactNoController.text.trim().isEmpty ? null : companyContactNoController.text.trim(),
         'password': 'Password123',
         'userType': widget.userType,
       };
@@ -70,7 +70,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           'companyEmpNo': int.tryParse(companyEmpNoController.text.trim()) ?? 0,
           'approvalStatus': 'Approve',
           'pContactJobTitle': placementContactJobTitleController.text.trim(),
-          'companyType': 'External',
+          'companyType': 'Registered',
         });
 
         // Clear fields
@@ -173,11 +173,11 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                                 const SizedBox(height: 16),
                                 _buildTextField(companyDescController, "Company Description", Icons.description, isMultiline: true, minLength: 20),
                                 const SizedBox(height: 16),
-                                _buildTextField(companyRegNoController, "Company Registration No", Icons.pin),
+                                _buildTextField(companyRegNoController, "Company Registration No", Icons.pin, isRegister: true),
                                 const SizedBox(height: 16),
-                                _buildTextField(companyYearController, "Company Establish Year", Icons.calendar_month, isNumeric: true),
+                                _buildTextField(companyYearController, "Company Establish Year", Icons.calendar_month, isYear: true),
                                 const SizedBox(height: 16),
-                                _buildTextField(companyEmpNoController, "Number of Employees", Icons.badge, isNumeric: true),
+                                _buildTextField(companyEmpNoController, "Number of Employees", Icons.badge, isEmp: true),
                                 const SizedBox(height: 16),
                                 DropdownButtonFormField<String>(
                                   decoration: InputDecoration(
@@ -225,7 +225,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
   Widget _buildTextField(
       TextEditingController controller, String label, IconData icon,
-      {bool isMultiline = false, bool isEmail = false, bool isPhone = false, bool isNumeric = false, int minLength = 0, String? hintText}) {
+      {bool isMultiline = false, bool isEmail = false, bool isPhone = false, bool isYear = false, bool isEmp = false, bool isRegister = false, int minLength = 0, String? hintText}) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
@@ -239,24 +239,30 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
       maxLines: isMultiline ? 5 : 1,
       keyboardType: isMultiline
           ? TextInputType.multiline
-          : isNumeric
+          : (isYear || isEmp)
               ? TextInputType.number
               : TextInputType.text,
       style: const TextStyle(color: Colors.black),
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if ((value == null || value.isEmpty) && !isPhone) {
           return "Please enter $label.";
         }
-        if (isEmail && !emailRegExp.hasMatch(value)) {
+        if (isEmail && value!.isNotEmpty && !emailRegExp.hasMatch(value)) {
           return "Please enter a valid email.";
         }
-        if (isPhone && !phoneRegExp.hasMatch(value)) {
+        if (isPhone && value!.isNotEmpty && !phoneRegExp.hasMatch(value)) {
           return "Please enter a valid contact number.";
         }
-        if (isNumeric && !RegExp(r'^[0-9]+\$').hasMatch(value)) {
-          return "Please enter a valid number.";
+        if (isRegister && value!.isNotEmpty && !companyRegNoRegExp.hasMatch(value)) {
+          return "Please enter a valid registration number.";
         }
-        if (minLength > 0 && value.length < minLength) {
+        if (isYear && value!.isNotEmpty && !yearRegExp.hasMatch(value)) {
+          return "Please enter a valid year (e.g., 2005).";
+        }
+        if (isEmp && value!.isNotEmpty && !empNoRegExp.hasMatch(value)) {
+          return "Please enter a valid number of employees.";
+        }
+        if (minLength > 0 && value!.isNotEmpty && value.length < minLength) {
           return "$label should be at least $minLength characters long.";
         }
         return null;

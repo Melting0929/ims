@@ -26,7 +26,7 @@ class _AddAdminPageState extends State<AddAdminPage> {
       Map<String, dynamic> userData = {
         'name': adminNameController.text.trim(),
         'email': adminEmailController.text.trim(),
-        'contactNo': adminContactNoController.text.trim(),
+        'contactNo': adminContactNoController.text.trim().isEmpty ? null : adminContactNoController.text.trim(),
         'password': 'Password456',
         'userType': widget.userType,
       };
@@ -154,9 +154,15 @@ class _AddAdminPageState extends State<AddAdminPage> {
       ),
       style: const TextStyle(color: Colors.black),
       validator: (value) {
-        if (value!.isEmpty) return "Please enter $label.";
-        if (isEmail && !emailRegExp.hasMatch(value)) return "Please enter a valid email.";
-        if (isPhone && !phoneRegExp.hasMatch(value)) return "Please enter a valid contact number.";
+        if ((value == null || value.isEmpty) && !isPhone) {
+          return "Please enter $label.";
+        }
+        if (isEmail && value!.isNotEmpty && !emailRegExp.hasMatch(value)) {
+          return "Please enter a valid email.";
+        }
+        if (isPhone && value!.isNotEmpty && !phoneRegExp.hasMatch(value)) {
+          return "Please enter a valid contact number.";
+        }
         return null;
       },
     );
