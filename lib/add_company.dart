@@ -71,6 +71,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           'approvalStatus': 'Approve',
           'pContactJobTitle': placementContactJobTitleController.text.trim(),
           'companyType': 'Registered',
+          'logoURL': '',
         });
 
         // Clear fields

@@ -348,7 +348,10 @@ void initState() {
     try {
       QuerySnapshot companySnapshot = await FirebaseFirestore.instance.collection('Company').get();
       List<Map<String, dynamic>> companies = companySnapshot.docs.map((doc) {
-        return doc.data() as Map<String, dynamic>;
+        return {
+          'companyID': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        };
       }).toList();
 
       List<Map<String, dynamic>> retrieveCompanyData = [];
@@ -359,7 +362,7 @@ void initState() {
         var user = userSnapshot.data() as Map<String, dynamic>;
 
         Map<String, dynamic> companyData = {
-          'userID': company['userID'] ?? '',
+          'userID': userID ?? '',
           'userType': user['userType'] ?? '',
           'name': user['name'] ?? '',
           'email': user['email'] ?? '',
@@ -534,7 +537,6 @@ void initState() {
         DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Password', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company ID', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Address', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nRegistration\nNo', style: TextStyle(color: Colors.white))),
