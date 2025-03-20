@@ -64,7 +64,6 @@ class ManageUserTab extends State<ManageUser> {
 void initState() {
   super.initState();
   fetchAdminDetails().then((_) {
-    _refreshData();
     fetchSupervisorList().then((supervisor) {
       setState(() {
         supervisorNames = supervisor;

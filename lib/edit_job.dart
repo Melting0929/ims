@@ -195,34 +195,6 @@ class EditJobTab extends State<EditJob> {
                                 ),
                                 const SizedBox(height: 16),
                                 DropdownButtonFormField<String>(
-                                  value: jobTypeController.text.isEmpty ? null : jobTypeController.text, 
-                                  decoration: InputDecoration(
-                                    labelText: "Job Type",
-                                    hintText: "Select the Job Type",
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: const Icon(Icons.work),
-                                  ),
-                                  items: <String>['Full-Time', 'Part-Time'] 
-                                      .map<DropdownMenuItem<String>>((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    jobType = newValue ?? '';
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Please select a valid job type.";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                DropdownButtonFormField<String>(
                                   value: jobStatusController.text.isEmpty ? null : jobStatusController.text, 
                                   decoration: InputDecoration(
                                     labelText: "Job Status",
@@ -382,7 +354,6 @@ class EditJobTab extends State<EditJob> {
                                               var updatedData = {
                                                 'jobTitle': updatedTitle,
                                                 'jobDesc': updatedDesc,
-                                                'jobType': jobType,
                                                 'jobStatus': jobStatus,
                                                 'jobAllowance': updatedJobAllowance,
                                                 'jobDuration': updatedJobDuration,

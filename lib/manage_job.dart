@@ -32,9 +32,13 @@ class ManageJobTab extends State<ManageJob> {
 
   List<Map<String, dynamic>> externalData = [];
   List<Map<String, dynamic>> registeredData = [];
+  List<String> jobExternalTitles = [];
+  List<String> jobRegisterTitles = [];
+  List<String> comExternalTitles = [];
+  List<String> comRegisterTitles = [];
 
-  String selectedJobTitle = 'All';
-  String selectedJobStatus = 'All';
+  String selectedEJobTitle = 'All';
+  String selectedEJobStatus = 'All';
   String selectedExternal = 'All';
 
   String selectedRJobTitle = 'All';
@@ -45,7 +49,8 @@ class ManageJobTab extends State<ManageJob> {
 void initState() {
   super.initState();
   fetchAdminDetails().then((_) {
-    _refreshData();
+    fetchJobTitles();
+    fetchCompanyNames();
   });
 }
 
@@ -138,9 +143,64 @@ void initState() {
     );
   }
 
+  Future<void> fetchJobTitles() async {
+    QuerySnapshot exjobSnapshot = await FirebaseFirestore.instance
+        .collection('Job')
+        .where('jobType', isEqualTo: 'External')
+        .get();
+    setState(() {
+      jobExternalTitles = exjobSnapshot.docs
+          .map((doc) => doc['jobTitle'] as String)
+          .toSet()
+          .toList();
+      jobExternalTitles.insert(0, 'All');
+    });
+
+    QuerySnapshot rejobSnapshot = await FirebaseFirestore.instance
+        .collection('Job')
+        .where('jobType', isEqualTo: 'Registered')
+        .get();
+    setState(() {
+      jobRegisterTitles = rejobSnapshot.docs
+          .map((doc) => doc['jobTitle'] as String)
+          .toSet()
+          .toList();
+      jobRegisterTitles.insert(0, 'All');
+    });
+  }
+
+  Future<void> fetchCompanyNames() async {
+    QuerySnapshot excompanySnapshot = await FirebaseFirestore.instance
+        .collection('Company')
+        .where('companyType', isEqualTo: 'External')
+        .get();
+    setState(() {
+      comExternalTitles = excompanySnapshot.docs
+          .map((doc) => doc['companyName'] as String)
+          .toSet()
+          .toList();
+      comExternalTitles.insert(0, 'All');
+    });
+
+    QuerySnapshot recompanySnapshot = await FirebaseFirestore.instance
+        .collection('Company')
+        .where('companyType', isEqualTo: 'Registered')
+        .get();
+    setState(() {
+      comRegisterTitles = recompanySnapshot.docs
+          .map((doc) => doc['companyName'] as String)
+          .toSet()
+          .toList();
+      comRegisterTitles.insert(0, 'All');
+    });
+  }
+  
   Future<List<Map<String, dynamic>>> _getExternalData() async {
     try {
-      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance.collection('Job').get();
+      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance
+          .collection('Job')
+          .where('jobType', isEqualTo: 'External')
+          .get();
       List<Map<String, dynamic>> externals = jobSnapshot.docs.map((doc) {
         return {
           'jobID': doc.id,
@@ -153,36 +213,48 @@ void initState() {
       for (var external in externals) {
         var jobID = external['jobID'];
         var userID = external['userID'];
+        var companyID = external['companyID'];
 
-        var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
+        var userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userID)
+            .get();
         if (!userSnapshot.exists) {
           print('User not found: $userID');
           continue;
         }
         var user = userSnapshot.data() as Map<String, dynamic>;
-        var userType = user['userType'];
         var name = user['name'];
 
-        if (userType == 'Admin') {
-          Map<String, dynamic> externalData = {
-            'jobID': jobID,
-            'jobTitle': external['jobTitle'] ?? '',
-            'jobDesc': external['jobDesc'] ?? '',
-            'jobAllowance': external['jobAllowance'] ?? '',
-            'jobDuration': external['jobDuration'] ?? '',
-            'jobType': external['jobType'] ?? '',
-            'jobStatus': external['jobStatus'] ?? '',
-            'numApplicant': external['numApplicant'] ?? '',
-            'userID': userID,
-            'name': name, // 1. findout the company name
-            'tags': external['tags'] ?? [], 
-          };
+        var excompanySnapshot = await FirebaseFirestore.instance
+            .collection('Company')
+            .doc(companyID)
+            .get();
+        if (!excompanySnapshot.exists) {
+          print('Company not found: $companyID');
+          continue;
+        }
+        var company = excompanySnapshot.data() as Map<String, dynamic>;
+        var companyName = company['companyName'];
 
-          if ((selectedJobTitle == 'All' || externalData['jobTitle'] == selectedJobTitle) && 
-              (selectedJobStatus == 'All' || externalData['jobStatus'] == selectedJobStatus) &&
-              (selectedExternal == 'All' || externalData['name'] == selectedExternal)) {
-            retrieveExternalData.add(externalData); // change to company name
-          }
+        Map<String, dynamic> externalData = {
+          'jobID': jobID,
+          'jobTitle': external['jobTitle'] ?? '',
+          'jobDesc': external['jobDesc'] ?? '',
+          'jobAllowance': external['jobAllowance'] ?? '',
+          'jobDuration': external['jobDuration'] ?? '',
+          'jobStatus': external['jobStatus'] ?? '',
+          'numApplicant': external['numApplicant'] ?? '',
+          'userID': userID,
+          'companyName': companyName,
+          'name': name,
+          'tags': external['tags'] ?? [], 
+        };
+
+        if ((selectedEJobTitle == 'All' || externalData['jobTitle'] == selectedEJobTitle) && 
+            (selectedEJobStatus == 'All' || externalData['jobStatus'] == selectedEJobStatus) &&
+            (selectedExternal == 'All' || externalData['companyName'] == selectedExternal)) {
+          retrieveExternalData.add(externalData); 
         }
       }
 
@@ -195,7 +267,10 @@ void initState() {
 
   Future<List<Map<String, dynamic>>> _getRegisteredData() async {
     try {
-      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance.collection('Job').get();
+      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance
+          .collection('Job')
+          .where('jobType', isEqualTo: 'Registered')
+          .get();
       List<Map<String, dynamic>> registered = jobSnapshot.docs.map((doc) {
         return {
           'jobID': doc.id,
@@ -208,53 +283,57 @@ void initState() {
       for (var register in registered) {
         var jobID = register['jobID'];
         var userID = register['userID'];
+        var companyID = register['companyID'];
 
-        var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
-        
-        var user = userSnapshot.data() as Map<String, dynamic>;
-        var userType = user['userType'];
-
-        var companySnapshot = await FirebaseFirestore.instance
-            .collection('Company')
-            .where('userID', isEqualTo: userID)
+        var userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userID)
             .get();
+        if (!userSnapshot.exists) {
+          print('User not found: $userID');
+          continue;
+        }
+        var user = userSnapshot.data() as Map<String, dynamic>;
+        var name = user['name'];
 
-        var company = companySnapshot.docs.isNotEmpty
-            ? companySnapshot.docs.first.data()
-            : null;
-        var name = company != null ? company['companyName'] : 'Unknown';
+        var recompanySnapshot = await FirebaseFirestore.instance
+            .collection('Company')
+            .doc(companyID)
+            .get();
+        if (!recompanySnapshot.exists) {
+          print('Company not found: $companyID');
+          continue;
+        }
+        var company = recompanySnapshot.data() as Map<String, dynamic>;
+        var companyName = company['companyName'];
 
-        if (userType == 'Company'){
-          Map<String, dynamic> registerData = {
-            'jobID': jobID,
-            'jobTitle': register['jobTitle'] ?? '',
-            'jobDesc': register['jobDesc'] ?? '',
-            'jobAllowance': register['jobAllowance'] ?? '',
-            'jobDuration': register['jobDuration'] ?? '',
-            'jobType': register['jobType'] ?? '',
-            'jobStatus': register['jobStatus'] ?? '',
-            'numApplicant': register['numApplicant'] ?? '',
-            'userID': userID,
-            'name': name,
-            'tags': register['tags'] ?? [], 
-          };
+        Map<String, dynamic> registerData = {
+          'jobID': jobID,
+          'jobTitle': register['jobTitle'] ?? '',
+          'jobDesc': register['jobDesc'] ?? '',
+          'jobAllowance': register['jobAllowance'] ?? '',
+          'jobDuration': register['jobDuration'] ?? '',
+          'jobStatus': register['jobStatus'] ?? '',
+          'numApplicant': register['numApplicant'] ?? '',
+          'userID': userID,
+          'name': name,
+          'companyName': companyName,
+          'tags': register['tags'] ?? [], 
+        };
 
-          if ((selectedRJobTitle == 'All' || registerData['jobTitle'] == selectedRJobTitle) && 
-              (selectedRJobStatus == 'All' || registerData['jobStatus'] == selectedRJobStatus) &&
-              (selectedRegistered == 'All' || registerData['name'] == selectedRegistered)) {
-            retrieveRegisteredData.add(registerData);
-          }
+        if ((selectedRJobTitle == 'All' || registerData['jobTitle'] == selectedRJobTitle) && 
+            (selectedRJobStatus == 'All' || registerData['jobStatus'] == selectedRJobStatus) &&
+            (selectedRegistered == 'All' || registerData['companyName'] == selectedRegistered)) {
+          retrieveRegisteredData.add(registerData);
         }
       }
-
       return retrieveRegisteredData;
     } catch (e) {
-      print('Error retrieving external job data: $e');
+      print('Error retrieving registered job data: $e');
       return [];
     }
   }
 
-  // Build Student DataTable
   Widget _buildTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
@@ -281,10 +360,10 @@ void initState() {
         DataColumn(label: Text('Job Description', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Allowance', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Duration', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job Type', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Status', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Number of\nApplicant Needed', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Tags', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('User Created', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
@@ -319,6 +398,7 @@ void initState() {
     required Future<List<Map<String, dynamic>>> future,
     required Widget Function(List<Map<String, dynamic>>) builder,
     List<Widget>? dropdowns,
+    bool showAddButton = true,
   }) {
     return Column(
       children: [
@@ -358,6 +438,7 @@ void initState() {
                                   icon: const Icon(Icons.refresh, color: Colors.white),
                                   label: const Text("Refresh"),
                                 ),
+                                if (showAddButton) ...[
                                 const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: onAdd,
@@ -370,9 +451,10 @@ void initState() {
                                   label: const Text("Add Job", style: TextStyle(color: Colors.black)),
                                 ),
                               ],
-                            ),
-                          ],
-                        )
+                            ],
+                          ),
+                        ],
+                      )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -394,6 +476,7 @@ void initState() {
                                   icon: const Icon(Icons.refresh, color: Colors.white),
                                   label: const Text("Refresh"),
                                 ),
+                                if (showAddButton) ...[
                                 const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: onAdd,
@@ -406,9 +489,10 @@ void initState() {
                                   label: const Text("Add Job", style: TextStyle(color: Colors.black)),
                                 ),
                               ],
-                            ),
-                          ],
-                        );
+                            ],
+                          ),
+                        ],
+                      );
                 },
               ),
             ),
@@ -603,24 +687,213 @@ void initState() {
                     future: _getExternalData(),
                     builder: _buildTable,
                     dropdowns: [
-
+                      const Text(
+                        "Company Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedExternal,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedExternal = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: comExternalTitles.map((title) {
+                              return DropdownMenuItem<String>(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Job Titles:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedEJobTitle,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedEJobTitle = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: jobExternalTitles.map((title) {
+                              return DropdownMenuItem<String>(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Job Status:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedEJobStatus,
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedEJobStatus = newValue!;
+                              });
+                            },
+                            items: ["All", "Accepting", "Closed"].map((status) {
+                              return DropdownMenuItem(
+                                value: status,
+                                child: Text(status),
+                              );
+                            }).toList(),
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                          ),
+                        ),
+                      ),
                     ]
                   ),
                   _buildTab(
                     title: "Manage Registered Companies Job",
-                    onAdd: () => 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddJob(userId: widget.userId),
-                      ),
-                    ),
+                    onAdd: () {},
                     onRefresh: _refreshData,
                     future: _getRegisteredData(),
                     builder: _buildTable,
                     dropdowns: [
-
-                    ]
+                      const Text(
+                        "Company Name:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedRegistered,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRegistered = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: comRegisterTitles.map((title) {
+                              return DropdownMenuItem<String>(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Job Titles:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedRJobTitle,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedRJobTitle = value!;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: jobRegisterTitles.map((title) {
+                              return DropdownMenuItem<String>(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Job Status:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedRJobStatus,
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedRJobStatus = newValue!;
+                              });
+                            },
+                            items: ["All", "Accepting", "Closed"].map((status) {
+                              return DropdownMenuItem(
+                                value: status,
+                                child: Text(status),
+                              );
+                            }).toList(),
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                    showAddButton: false,
                   ),
                 ],
               ),
@@ -657,10 +930,10 @@ class JobData extends DataTableSource {
         DataCell(Text(item['jobDesc'] ?? '')),
         DataCell(Text(item['jobAllowance'].toString())),
         DataCell(Text(item['jobDuration'].toString())),
-        DataCell(Text(item['jobType'] ?? '')),
         DataCell(Text(item['jobStatus'] ?? '')),
         DataCell(Text(item['numApplicant'].toString())),
         DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
+        DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['name'] ?? '')),
         DataCell(
         Row(

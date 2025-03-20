@@ -52,7 +52,6 @@ void initState() {
   super.initState();
   fetchCompanyDetails().then((_) {
     fetchJobTitles();
-    _refreshData();
   });
 }
 
@@ -168,7 +167,7 @@ void initState() {
     }
   }
 
-   Future<void> fetchJobTitles() async {
+  Future<void> fetchJobTitles() async {
     QuerySnapshot jobSnapshot = await FirebaseFirestore.instance
         .collection('Job')
         .where('userID', isEqualTo: widget.userId)
@@ -489,7 +488,6 @@ void initState() {
                             setState(() {
                               selectedJobTitle = value;
                             });
-                            _refreshData();
                           },
                           icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                           dropdownColor: Colors.white,

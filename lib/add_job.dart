@@ -16,12 +16,17 @@ class _AddJobState extends State<AddJob> {
   final _formKey = GlobalKey<FormState>();
   String jobStatus = '';
   String jobType = '';
+  String userType = '';
   List<String> jobTags = [];
+
+  String selectedCompanyID = '';
+  String? selectedCompanyName;
+  List<String> companyNames = [];
+  Map<String, String> companyMap = {};
 
   // Text editing controllers
   final TextEditingController jobTitleController = TextEditingController();
   final TextEditingController jobDescController = TextEditingController();
-  final TextEditingController jobTypeController = TextEditingController();
   final TextEditingController jobStatusController = TextEditingController();
   final TextEditingController jobAllowanceController = TextEditingController();
   final TextEditingController jobDurationController = TextEditingController();
@@ -31,6 +36,59 @@ class _AddJobState extends State<AddJob> {
   RegExp numRegExp = RegExp(r'^\d+$');
   RegExp doubleRegExp = RegExp(r'^\d+(\.\d{1,2})?$');
 
+  @override
+  void initState() {
+    super.initState();
+    fetchUserDetails().then((_) {
+      if (userType == 'Admin') {
+        fetchCompanyNames();
+      }
+    });
+  }
+
+  Future<void> fetchCompanyNames() async {
+    try {
+      QuerySnapshot companySnapshot = await FirebaseFirestore.instance
+          .collection('Company')
+          .where('companyType', isEqualTo: 'External')
+          .get();
+
+      List<String> names = [];
+      Map<String, String> map = {};
+
+      for (var doc in companySnapshot.docs) {
+        String companyName = doc['companyName'];
+        String companyID = doc.id;
+        names.add(companyName);
+        map[companyName] = companyID;
+      }
+
+      setState(() {
+        companyNames = names;
+        companyMap = map;
+      });
+    } catch (e) {
+      debugPrint("Error fetching company names: $e");
+    }
+  }
+
+  Future<void> fetchUserDetails() async {
+    try {
+      var userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.userId)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          userType = userDoc.data()?['userType'] ?? 'No userType';
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching user details: $e");
+    }
+  }
+  
   // Save user to Firestore
   Future<void> saveData() async {
     if (_formKey.currentState!.validate()) {
@@ -44,6 +102,41 @@ class _AddJobState extends State<AddJob> {
         return;
       }
 
+      if (userType =='Company') {
+        jobType = 'Registered';
+        try {
+          var companyDoc = await FirebaseFirestore.instance
+              .collection('Company')
+              .where('userID', isEqualTo: widget.userId)
+              .get();
+
+          if (companyDoc.docs.isNotEmpty) {
+            setState(() {
+              selectedCompanyID = companyDoc.docs.first.id;
+            });
+          }
+        } catch (e) {
+          print("Error fetching company data: $e");
+        }
+      } else {
+        jobType = 'External';
+        try {
+          selectedCompanyID = companyMap[selectedCompanyName] ?? '';
+
+          if (selectedCompanyID.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please select a company before saving.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        } catch (e) {
+          print("Error fetching company data: $e");
+        }
+      }
+
       Map<String, dynamic> jobData = {
         'jobTitle': jobTitleController.text.trim(),
         'jobDesc': jobDescController.text.trim(),
@@ -53,6 +146,7 @@ class _AddJobState extends State<AddJob> {
         'jobDuration': int.tryParse(jobDurationController.text.trim()) ?? 0,
         'numApplicant': int.tryParse(numApplicantController.text.trim()) ?? 0,
         'tags': jobTags,
+        'companyID': selectedCompanyID,
         'userID': widget.userId,
       };
 
@@ -65,7 +159,6 @@ class _AddJobState extends State<AddJob> {
         // Clear fields
         jobTitleController.clear();
         jobDescController.clear();
-        jobTypeController.clear();
         jobStatusController.clear();
         jobAllowanceController.clear();
         jobDurationController.clear();
@@ -142,6 +235,42 @@ class _AddJobState extends State<AddJob> {
                                   style: TextStyle(fontSize: 16, color: Colors.black),
                                 ),
                                 const SizedBox(height: 32),
+                                if (userType == 'Admin') ...[
+                                  const Text(
+                                    "Company:",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.black, width: 1.5),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedCompanyName,
+                                        onChanged: (newValue) {
+                                          setState(() {
+                                            selectedCompanyName = newValue!;
+                                          });
+                                        },
+                                        items: companyNames.map((status) {
+                                          return DropdownMenuItem(
+                                            value: status,
+                                            child: Text(status),
+                                          );
+                                        }).toList(),
+                                        icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                                        dropdownColor: Colors.white,
+                                        style: const TextStyle(color: Colors.black, fontSize: 14),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                                const SizedBox(height: 16),
                                 TextFormField(
                                   controller: jobTitleController,
                                   decoration: InputDecoration(
@@ -173,34 +302,6 @@ class _AddJobState extends State<AddJob> {
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return "Please enter the job description.";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                DropdownButtonFormField<String>(
-                                  value: jobTypeController.text.isEmpty ? null : jobTypeController.text, 
-                                  decoration: InputDecoration(
-                                    labelText: "Job Type",
-                                    hintText: "Select the Job Type",
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: const Icon(Icons.work),
-                                  ),
-                                  items: <String>['Full-Time', 'Part-Time'] 
-                                      .map<DropdownMenuItem<String>>((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    jobType = newValue ?? '';
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Please select a valid job type.";
                                     }
                                     return null;
                                   },

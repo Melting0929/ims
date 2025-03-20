@@ -136,6 +136,7 @@ class _CompanySignUpPageState extends State<CompanySignUpPage> {
         'companyID': companyRef.id,
         'logoURL': logoUrl ?? '',
         'approvalStatus': 'Pending',
+        'companyType': 'Registered',
         'userID': userRef.id,
       };
 

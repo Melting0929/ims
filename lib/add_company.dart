@@ -70,6 +70,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           'companyEmpNo': int.tryParse(companyEmpNoController.text.trim()) ?? 0,
           'approvalStatus': 'Approve',
           'pContactJobTitle': placementContactJobTitleController.text.trim(),
+          'companyType': 'External',
         });
 
         // Clear fields
