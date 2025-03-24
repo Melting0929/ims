@@ -56,9 +56,9 @@ class ManageUserTab extends State<ManageUser> {
 
   String selectedAdmin = 'All';
 
-  List<String> supervisorNames = [];
-  List<String> companyNames = [];
-  List<String> adminNames = [];
+  List<String> supervisorNames = ['All'];
+  List<String> companyNames = ['All'];
+  List<String> adminNames = ['All'];
 
 @override
 void initState() {
@@ -1412,7 +1412,6 @@ class CompanyData extends DataTableSource {
         DataCell(Text(item['contactNo'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['password'] ?? '')),
-        DataCell(Text(item['companyID'] ?? '')),
         DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['companyAddress'] ?? '')),
         DataCell(Text(item['companyRegNo'] ?? '')),
@@ -1421,6 +1420,7 @@ class CompanyData extends DataTableSource {
         DataCell(Text(item['companyIndustry'] ?? '')),
         DataCell(Text(item['companyEmpNo'].toString())),
         DataCell(Text(item['companyEmail'] ?? '')),
+        
         DataCell(
           InkWell(
             child: IconButton(
