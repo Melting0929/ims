@@ -52,6 +52,7 @@ void initState() {
   super.initState();
   fetchCompanyDetails().then((_) {
     fetchJobTitles();
+    _refreshData();
   });
 }
 

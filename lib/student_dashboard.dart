@@ -1,11 +1,15 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'download_guideline.dart';
 import 'login_web.dart';
 import 'eprofile_student.dart';
 import 'color.dart';
 
+// Date Applied
 class StudentDashboard extends StatefulWidget {
   final String userId;
   const StudentDashboard({super.key, required this.userId});
@@ -18,7 +22,13 @@ class StudentDashboardState extends State<StudentDashboard> {
   String studentEmail = "Loading...";
   String studentName = "Loading...";
   String studID = "Loading...";
+  String? resumeURL;
   String selectedMenu = "Dashboard";
+
+  List<Map<String, dynamic>> applications = [];
+
+  PlatformFile? _selectedDocument;
+  String? _uploadedFileName;
 
   @override
   void initState() {
@@ -48,11 +58,84 @@ class StudentDashboardState extends State<StudentDashboard> {
           var studentData = studentDoc.docs.first.data();
           setState(() {
             studID = studentData['studID'] ?? 'No ID';
+            resumeURL = studentData['resumeURL'] ?? '';
           });
         }
+        // Fetch applications after retrieving the studID
+        fetchApplications();
       }
     } catch (e) {
       debugPrint("Error fetching student details: $e");
+    }
+  }
+
+  Future<void> fetchApplications() async {
+    try {
+      var querySnapshot = await FirebaseFirestore.instance
+          .collection('Application')
+          .where('studID', isEqualTo: studID)
+          .get();
+
+      List<Map<String, dynamic>> fetchedApplications = [];
+
+      // Fetch job and company details for each application
+      await Future.wait(querySnapshot.docs.map((doc) async {
+        var data = doc.data();
+        String jobID = data['jobID'] ?? '';
+
+        Map<String, dynamic> jobData = {};
+        Map<String, dynamic> companyData = {};
+        String companyID = '';
+
+        // Fetch job details
+        if (jobID.isNotEmpty) {
+          try {
+            var jobDoc = await FirebaseFirestore.instance
+                .collection('Job')
+                .doc(jobID)
+                .get();
+
+            if (jobDoc.exists) {
+              jobData = jobDoc.data() ?? {};
+              companyID = jobData['companyID'] ?? '';
+            }
+          } catch (jobError) {
+            debugPrint("Error fetching job details: $jobError");
+          }
+        }
+
+        // Fetch company details using companyID
+        if (companyID.isNotEmpty) {
+          try {
+            var companyDoc = await FirebaseFirestore.instance
+                .collection('Company')
+                .doc(companyID)
+                .get();
+
+            if (companyDoc.exists) {
+              companyData = companyDoc.data() ?? {};
+            }
+          } catch (companyError) {
+            debugPrint("Error fetching company details: $companyError");
+          }
+        }
+
+        fetchedApplications.add({
+          'applicationID': doc.id,
+          'jobID': jobID,
+          'applicationStatus': data['applicationStatus'] ?? 'Pending',
+          'interviewStatus': data['interviewStatus'] ?? 'Pending',
+          'jobTitle': jobData['title'] ?? 'Unknown',
+          'companyID': companyID,
+          'companyName': companyData['name'] ?? 'Unknown',
+        });
+      }));
+
+      setState(() {
+        applications = fetchedApplications;
+      });
+    } catch (e) {
+      debugPrint("Error fetching applications: $e");
     }
   }
 
@@ -116,6 +199,161 @@ class StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  Future<void> _uploadResume() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No document selected.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedDocument = result.files.single;
+      _uploadedFileName = result.files.single.name;
+    });
+
+    // Show confirmation dialog
+    bool confirmUpload = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Upload"),
+        content: Text("Do you want to upload $_uploadedFileName?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Upload"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmUpload) {
+      await _uploadDocument();
+    }
+  }
+
+  Future<void> _uploadDocument() async {
+    if (_selectedDocument == null) {
+      return;
+    }
+
+    final fileName = _uploadedFileName ?? DateTime.now().millisecondsSinceEpoch.toString();
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only PDF files are allowed.')),
+      );
+      return;
+    }
+
+    try {
+      // Show progress indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Find the student's document in the Student collection
+      QuerySnapshot studentQuery = await FirebaseFirestore.instance
+          .collection('Student')
+          .where('userID', isEqualTo: widget.userId)
+          .get();
+
+      if (studentQuery.docs.isNotEmpty) {
+        // Get the document ID
+        String studentDocId = studentQuery.docs.first.id;
+        var studentDoc = studentQuery.docs.first;
+
+        // Check if the student already has an existing resumeURL
+        String? existingResumeUrl = studentDoc['resumeURL'];
+
+        if (existingResumeUrl != null && existingResumeUrl.isNotEmpty) {
+          // Extract the file name from the existing URL
+          Uri uri = Uri.parse(existingResumeUrl);
+          String? oldFileName = uri.pathSegments.last;
+
+          // Delete the old file from Firebase Storage
+          final oldFileRef = FirebaseStorage.instance.ref().child('resume/$oldFileName');
+          await oldFileRef.delete();
+        }
+
+        // Upload new file to Firebase Storage
+        final storageRef = FirebaseStorage.instance.ref().child('resume/$fileName');
+        final metadata = SettableMetadata(contentType: 'application/pdf');
+        final uploadTask = storageRef.putData(_selectedDocument!.bytes!, metadata);
+        final snapshot = await uploadTask;
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Update Firestore document with new resume URL
+        await FirebaseFirestore.instance.collection('Student').doc(studentDocId).update({
+          'resumeURL': downloadUrl,
+          'uploadedAt': FieldValue.serverTimestamp(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Resume uploaded successfully!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Student record not found.')),
+        );
+      }
+
+      // Close progress indicator
+      Navigator.pop(context);
+
+      // Clear selection
+      setState(() {
+        _selectedDocument = null;
+        _uploadedFileName = null;
+      });
+    } catch (e) {
+      Navigator.pop(context); // Close loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading resume: $e')),
+      );
+    }
+  }
+  
+  void _launchURL(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch $url');
+    }
+  }
+
+  Widget buildResumeDisplay() {
+    return resumeURL != null
+        ? GestureDetector(
+            onTap: () => _launchURL(resumeURL!),
+            child: const Text(
+              "View Uploaded Resume",
+              style: TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          )
+        : const Text(
+            "No file uploaded",
+            style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+          );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,6 +437,14 @@ class StudentDashboardState extends State<StudentDashboard> {
                   ),
                   buildDrawerItem(
                     icon: Icons.upload_file,
+                    title: "Apply External Company Page",
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                    ),
+                  ),
+                  buildDrawerItem(
+                    icon: Icons.upload_file,
                     title: "Download Document Page",
                     onTap: () => Navigator.push(
                       context,
@@ -242,27 +488,96 @@ class StudentDashboardState extends State<StudentDashboard> {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 30.0, top: 20.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
+                Row(
+                  children: [
+                    const Icon(Icons.account_circle, size: 40),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          studentName,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          studID,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          "Welcome to Student Dashboard",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, thickness: 1, color: Color.fromARGB(255, 204, 201, 201)),
+
+                // Upload Resume Row
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0, right: 70, left: 20),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.account_circle, size: 40),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          Text(
-                            studentName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          const Text(
+                            "Upload Resume:",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
-                          Text(
-                            studID,
-                            style: const TextStyle(fontSize: 14),
+                          const SizedBox(width: 10),
+                          ElevatedButton.icon(
+                            onPressed: _uploadResume,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                            ),
+                            icon: const Icon(Icons.upload_file, color: Colors.white),
+                            label: Text(_uploadedFileName ?? 'Upload Document', style: const TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                      buildResumeDisplay(),
+                    ],
+                  ),
+                ),
+
+                // Application Row
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0, right: 70, left: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            "Application History:",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: applications.isEmpty
+                                ? const Center(child: CircularProgressIndicator())
+                                : Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: PaginatedDataTable(
+                                      header: const Text("Internship Applications"),
+                                      columns: const [
+                                        DataColumn(label: Text("Job Title")),
+                                        DataColumn(label: Text("Company Name")),
+                                        DataColumn(label: Text("Application Status")),
+                                        DataColumn(label: Text("Interview Status")),
+                                      ],
+                                      source: ApplicationDataSource(applications),
+                                      rowsPerPage: 5,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -276,4 +591,33 @@ class StudentDashboardState extends State<StudentDashboard> {
       ),
     );
   }
+}
+
+// DataTable Source for pagination
+class ApplicationDataSource extends DataTableSource {
+  final List<Map<String, dynamic>> applications;
+
+  ApplicationDataSource(this.applications);
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= applications.length) return null;
+
+    var application = applications[index];
+    return DataRow(cells: [
+      DataCell(Text(application['jobTitle'] ?? 'N/A')),
+      DataCell(Text(application['companyName'] ?? 'N/A')),
+      DataCell(Text(application['applicationStatus'] ?? 'Pending')),
+      DataCell(Text(application['interviewStatus'] ?? 'N/A')),
+    ]);
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => applications.length;
+
+  @override
+  int get selectedRowCount => 0;
 }

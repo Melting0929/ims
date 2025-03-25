@@ -134,7 +134,7 @@ class LoginWebState extends State<LoginWeb> {
             padding: const EdgeInsets.all(20.0),
             child: Form(
               key: formKey,
-              child: SingleChildScrollView( // Makes the form scrollable
+              child: SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height * 0.9,
@@ -228,7 +228,7 @@ class LoginWebState extends State<LoginWeb> {
                           const SizedBox(height: 20.0),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
+                              fixedSize: const Size(200, 40),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -247,8 +247,8 @@ class LoginWebState extends State<LoginWeb> {
                           if (selectedRole == 'Company')
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 50),
-                                backgroundColor: Colors.teal,
+                                fixedSize: const Size(300, 40),
+                                backgroundColor: AppColors.secondaryYellow,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -259,7 +259,7 @@ class LoginWebState extends State<LoginWeb> {
                                   MaterialPageRoute(builder: (context) => const CompanySignUpPage()),
                                 );
                               },
-                              child: const Text('Sign-Up as Our Industry Partner', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              child: const Text('Sign-Up as Our Industry Partner', style: TextStyle(fontSize: 16, color: Colors.black)),
                             ),
                         ],
                       ),
