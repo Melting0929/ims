@@ -10,6 +10,7 @@ import 'eprofile_student.dart';
 import 'color.dart';
 
 // Date Applied
+// Upload Resume & Delete Resume File Name
 class StudentDashboard extends StatefulWidget {
   final String userId;
   const StudentDashboard({super.key, required this.userId});
@@ -33,7 +34,9 @@ class StudentDashboardState extends State<StudentDashboard> {
   @override
   void initState() {
     super.initState();
-    fetchStudentDetails();
+    fetchStudentDetails().then((_) {
+      fetchApplications();
+    });
   }
 
   Future<void> fetchStudentDetails() async {
@@ -61,8 +64,6 @@ class StudentDashboardState extends State<StudentDashboard> {
             resumeURL = studentData['resumeURL'] ?? '';
           });
         }
-        // Fetch applications after retrieving the studID
-        fetchApplications();
       }
     } catch (e) {
       debugPrint("Error fetching student details: $e");
@@ -75,18 +76,18 @@ class StudentDashboardState extends State<StudentDashboard> {
           .collection('Application')
           .where('studID', isEqualTo: studID)
           .get();
-
+  
       List<Map<String, dynamic>> fetchedApplications = [];
-
+  
       // Fetch job and company details for each application
       await Future.wait(querySnapshot.docs.map((doc) async {
         var data = doc.data();
         String jobID = data['jobID'] ?? '';
-
+  
         Map<String, dynamic> jobData = {};
         Map<String, dynamic> companyData = {};
         String companyID = '';
-
+  
         // Fetch job details
         if (jobID.isNotEmpty) {
           try {
@@ -94,16 +95,16 @@ class StudentDashboardState extends State<StudentDashboard> {
                 .collection('Job')
                 .doc(jobID)
                 .get();
-
+  
             if (jobDoc.exists) {
-              jobData = jobDoc.data() ?? {};
+              jobData = jobDoc.data() as Map<String, dynamic>;
               companyID = jobData['companyID'] ?? '';
             }
           } catch (jobError) {
             debugPrint("Error fetching job details: $jobError");
           }
         }
-
+  
         // Fetch company details using companyID
         if (companyID.isNotEmpty) {
           try {
@@ -111,26 +112,26 @@ class StudentDashboardState extends State<StudentDashboard> {
                 .collection('Company')
                 .doc(companyID)
                 .get();
-
+  
             if (companyDoc.exists) {
-              companyData = companyDoc.data() ?? {};
+              companyData = companyDoc.data() as Map<String, dynamic>;
             }
           } catch (companyError) {
             debugPrint("Error fetching company details: $companyError");
           }
         }
-
+  
         fetchedApplications.add({
           'applicationID': doc.id,
           'jobID': jobID,
           'applicationStatus': data['applicationStatus'] ?? 'Pending',
           'interviewStatus': data['interviewStatus'] ?? 'Pending',
-          'jobTitle': jobData['title'] ?? 'Unknown',
+          'jobTitle': jobData['jobTitle'] ?? 'Unknown',
           'companyID': companyID,
-          'companyName': companyData['name'] ?? 'Unknown',
+          'companyName': companyData['companyName'] ?? 'Unknown',
         });
       }));
-
+  
       setState(() {
         applications = fetchedApplications;
       });
@@ -284,6 +285,7 @@ class StudentDashboardState extends State<StudentDashboard> {
 
           // Delete the old file from Firebase Storage
           final oldFileRef = FirebaseStorage.instance.ref().child('resume/$oldFileName');
+          print('Deleting old file: $oldFileName');
           await oldFileRef.delete();
         }
 
@@ -303,6 +305,8 @@ class StudentDashboardState extends State<StudentDashboard> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Resume uploaded successfully!')),
         );
+
+        await fetchStudentDetails();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Student record not found.')),
@@ -318,10 +322,8 @@ class StudentDashboardState extends State<StudentDashboard> {
         _uploadedFileName = null;
       });
     } catch (e) {
-      Navigator.pop(context); // Close loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading resume: $e')),
-      );
+      Navigator.pop(context);
+      debugPrint('Error uploading resume: $e');
     }
   }
   
@@ -520,17 +522,18 @@ class StudentDashboardState extends State<StudentDashboard> {
 
                 // Upload Resume Row
                 Padding(
-                  padding: const EdgeInsets.only(top: 30.0, right: 70, left: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.only(top: 30.0, right: 70, left: 50),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, 
                     children: [
+                      const Text(
+                        "Upload Resume:",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10), 
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
                         children: [
-                          const Text(
-                            "Upload Resume:",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 10),
                           ElevatedButton.icon(
                             onPressed: _uploadResume,
                             style: ElevatedButton.styleFrom(
@@ -539,48 +542,60 @@ class StudentDashboardState extends State<StudentDashboard> {
                               elevation: 2,
                             ),
                             icon: const Icon(Icons.upload_file, color: Colors.white),
-                            label: Text(_uploadedFileName ?? 'Upload Document', style: const TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                      buildResumeDisplay(),
-                    ],
-                  ),
-                ),
-
-                // Application Row
-                Padding(
-                  padding: const EdgeInsets.only(top: 30.0, right: 70, left: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            "Application History:",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            label: Text(
+                              _uploadedFileName ?? 'Upload Document',
+                              style: const TextStyle(color: Colors.white),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: applications.isEmpty
-                                ? const Center(child: CircularProgressIndicator())
-                                : Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: PaginatedDataTable(
-                                      header: const Text("Internship Applications"),
-                                      columns: const [
-                                        DataColumn(label: Text("Job Title")),
-                                        DataColumn(label: Text("Company Name")),
-                                        DataColumn(label: Text("Application Status")),
-                                        DataColumn(label: Text("Interview Status")),
-                                      ],
-                                      source: ApplicationDataSource(applications),
-                                      rowsPerPage: 5,
-                                    ),
-                                  ),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: buildResumeDisplay(),
+                            ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0, right: 50, left: 50),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Application History:",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      applications.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SizedBox(
+                                width: 1200, 
+                                child: PaginatedDataTable(
+                                  columnSpacing: 20,
+                                  horizontalMargin: 16,
+                                  dividerThickness: 1.5,
+                                  columns: const [
+                                    DataColumn(label: Text("Job Title", style: TextStyle(color: Colors.white))),
+                                    DataColumn(label: Text("Company Name", style: TextStyle(color: Colors.white))),
+                                    DataColumn(label: Text("Application Status", style: TextStyle(color: Colors.white))),
+                                    DataColumn(label: Text("Interview Status", style: TextStyle(color: Colors.white))),
+                                  ],
+                                  source: ApplicationDataSource(applications),
+                                  rowsPerPage: 4,
+                                  showFirstLastButtons: true,
+                                  dataRowMinHeight: 10,
+                                  headingRowHeight: 60,
+                                  headingRowColor: WidgetStateProperty.resolveWith(
+                                    (states) => Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
                     ],
                   ),
                 ),
