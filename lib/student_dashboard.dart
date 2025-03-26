@@ -244,10 +244,13 @@ class StudentDashboardState extends State<StudentDashboard> {
   }
 
   Future<void> _uploadDocument() async {
-    if (_selectedDocument == null) {
+    if (_selectedDocument?.bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: File data is empty.')),
+      );
       return;
     }
-
+  
     final fileName = _uploadedFileName ?? DateTime.now().millisecondsSinceEpoch.toString();
     if (!fileName.toLowerCase().endsWith('.pdf')) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -255,7 +258,7 @@ class StudentDashboardState extends State<StudentDashboard> {
       );
       return;
     }
-
+  
     try {
       // Show progress indicator
       showDialog(
@@ -263,32 +266,40 @@ class StudentDashboardState extends State<StudentDashboard> {
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
-
+  
       // Find the student's document in the Student collection
       QuerySnapshot studentQuery = await FirebaseFirestore.instance
           .collection('Student')
           .where('userID', isEqualTo: widget.userId)
           .get();
-
+  
       if (studentQuery.docs.isNotEmpty) {
         // Get the document ID
         String studentDocId = studentQuery.docs.first.id;
         var studentDoc = studentQuery.docs.first;
-
+  
         // Check if the student already has an existing resumeURL
         String? existingResumeUrl = studentDoc['resumeURL'];
-
+        debugPrint('Existing Resume URL: $existingResumeUrl');
+  
         if (existingResumeUrl != null && existingResumeUrl.isNotEmpty) {
-          // Extract the file name from the existing URL
-          Uri uri = Uri.parse(existingResumeUrl);
-          String? oldFileName = uri.pathSegments.last;
-
-          // Delete the old file from Firebase Storage
-          final oldFileRef = FirebaseStorage.instance.ref().child('resume/$oldFileName');
-          print('Deleting old file: $oldFileName');
-          await oldFileRef.delete();
+          try {
+            String storagePath = Uri.decodeFull(existingResumeUrl)
+                .split('?').first // Remove query parameters
+                .replaceFirst(RegExp(r'^https://firebasestorage\.googleapis\.com/v0/b/[^/]+/o/'), ''); // Remove base URL
+            storagePath = storagePath.replaceAll('%2F', '/'); // Decode encoded slashes
+            
+            final oldFileRef = FirebaseStorage.instance.ref().child(storagePath);
+            
+            // Ensure the file exists before deleting
+            await oldFileRef.getMetadata();
+            await oldFileRef.delete();
+            debugPrint('Old resume deleted successfully.');
+          } catch (e) {
+            debugPrint('Error deleting old resume: $e');
+          }
         }
-
+  
         // Upload new file to Firebase Storage
         final storageRef = FirebaseStorage.instance.ref().child('resume/$fileName');
         final metadata = SettableMetadata(contentType: 'application/pdf');
@@ -296,26 +307,29 @@ class StudentDashboardState extends State<StudentDashboard> {
         final snapshot = await uploadTask;
         final downloadUrl = await snapshot.ref.getDownloadURL();
 
+        debugPrint('Uploading file: resume/$fileName');
+  
         // Update Firestore document with new resume URL
         await FirebaseFirestore.instance.collection('Student').doc(studentDocId).update({
           'resumeURL': downloadUrl,
           'uploadedAt': FieldValue.serverTimestamp(),
         });
-
+  
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Resume uploaded successfully!')),
         );
-
+  
+        // Refresh the resume link by fetching student details again
         await fetchStudentDetails();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Student record not found.')),
         );
       }
-
+  
       // Close progress indicator
       Navigator.pop(context);
-
+  
       // Clear selection
       setState(() {
         _selectedDocument = null;
@@ -323,7 +337,9 @@ class StudentDashboardState extends State<StudentDashboard> {
       });
     } catch (e) {
       Navigator.pop(context);
-      debugPrint('Error uploading resume: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading resume: $e')),
+      );
     }
   }
   
