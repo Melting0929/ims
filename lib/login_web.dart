@@ -248,7 +248,7 @@ class LoginWebState extends State<LoginWeb> {
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 fixedSize: const Size(300, 40),
-                                backgroundColor: AppColors.secondaryYellow,
+                                backgroundColor: AppColors.backgroundGreen,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

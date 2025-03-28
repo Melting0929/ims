@@ -77,18 +77,18 @@ void main() async {
     compEmail: 'info@techinnovators.com',
     compAddress: '123 Silicon Valley',
     compRegNo: 'TIN123456',
-    compDesc: 'Leading in tech solutions.',
     compIndustry: 'E-Commerce',
     compYear: 2020,
     jobTitle: 'Software Developer Intern',
-    jobDesc: 'Develop cutting-edge software solutions.',
-    jobAllowance: 1500.0,
     jobDuration: 6,
-    jobType: 'Full-Time',
+    jobType: 'External',
     offerLetter: 'offer_letter_url',
     studID: '101',
     status: 'Pending',
-    tags: ['Software Development', 'Internship', 'Technology'],
+    placementContactName: null,
+    placementContactEmail: null,
+    placementContactNo: null,
+    placementJobTitle: null,
   );
 
   await addApplicant(
@@ -96,6 +96,7 @@ void main() async {
     jobID: 'vvb1mT01G6vgnNdbwgsi',
     applicationStatus: 'Pending',
     interviewStatus: 'None',
+    dateApplied: '14 March 2025 at 00:00:00 UTC+8',
   );
 
   
@@ -300,18 +301,18 @@ Future<void> addExternal({
   required String compEmail,
   required String compAddress,
   required String compRegNo,
-  required String compDesc,
   required String compIndustry,
   required int compYear,
   required String jobTitle,
-  required String jobDesc,
-  required double jobAllowance,
   required int jobDuration,
   required String jobType,
   required String offerLetter,
   required String studID,
   required String status,
-  required List<String> tags,
+  String? placementContactName,
+  String? placementContactEmail,
+  String? placementContactNo,
+  String? placementJobTitle,
 
 }) async {
   try {
@@ -332,17 +333,17 @@ Future<void> addExternal({
           'exCompAddress': compAddress,
           'exCompRegNo': compRegNo,
           'exCompYear': compYear,
-          'exCompDesc': compDesc,
           'exJobTitle': jobTitle,
-          'exJobDesc': jobDesc,
-          'exJobAllowance': jobAllowance,
           'exJobDuration': jobDuration,
           'offerLetter': offerLetter,
           'studID': studID,
-          'tags': tags, 
           'exComIndustry': compIndustry,
           'exJobType': jobType,
           'externalStatus': status,
+          'placementContactName': placementContactName,
+          'placementContactEmail': placementContactEmail,
+          'placementContactNo': placementContactNo,
+          'placementJobTitle': placementJobTitle,
     });
     debugPrint('External Application added successfully');
   } catch (e) {
@@ -355,6 +356,7 @@ Future<void> addApplicant({
   required String jobID,
   required String interviewStatus,
   required String applicationStatus,
+  required String dateApplied,
 
 }) async {
   try {
@@ -374,6 +376,7 @@ Future<void> addApplicant({
           'interviewStatus': interviewStatus,
           'applicationStatus': applicationStatus,
           'studID': studID,
+          'dateApplied': dateApplied,
     });
     debugPrint('Application added successfully');
   } catch (e) {

@@ -32,9 +32,7 @@ class _AddAdminPageState extends State<AddAdminPage> {
       };
 
       try {
-        var userRef = await FirebaseFirestore.instance.collection('Users').add(userData);
-        String userID = userRef.id;
-        await FirebaseFirestore.instance.collection('Admin').add({'userID': userID});
+        await FirebaseFirestore.instance.collection('Users').add(userData);
 
         adminNameController.clear();
         adminEmailController.clear();

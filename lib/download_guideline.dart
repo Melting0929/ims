@@ -10,12 +10,13 @@ import 'supervisor_dashboard.dart';
 import 'manage_cjob.dart';
 import 'manage_applicant.dart';
 import 'manage_assessment.dart';
+import 'apply_external.dart';
 import 'eprofile_student.dart';
 import 'eprofile_supervisor.dart';
 import 'eprofile_company.dart';
 import 'color.dart';
 
-
+// Check Drawer
 class DownloadGuideline extends StatefulWidget {
   final String userId;
   const DownloadGuideline ({super.key, required this.userId});
@@ -157,6 +158,14 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
             onTap: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
+            ),
+          ),
+          buildDrawerItem(
+            icon: Icons.upload_file,
+            title: "Apply External Company Page",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddExternal(userId: widget.userId)),
             ),
           ),
           buildDrawerItem(

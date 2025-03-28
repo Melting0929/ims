@@ -343,7 +343,6 @@ void initState() {
   }
 }
 
-  // Fetch Company Data and combine with Users
   Future<List<Map<String, dynamic>>> _getCompanyData() async {
     try {
       QuerySnapshot companySnapshot = await FirebaseFirestore.instance.collection('Company').get();
@@ -395,7 +394,6 @@ void initState() {
     }
   }
 
-  // Fetch Supervisor Data and combine with Users
   Future<List<Map<String, dynamic>>> _getSupervisorData() async {
     try {
       QuerySnapshot supervisorSnapshot = await FirebaseFirestore.instance.collection('Supervisor').get();
@@ -434,33 +432,31 @@ void initState() {
     }
   }
 
-  // Fetch Admin Data and combine with Users
   Future<List<Map<String, dynamic>>> _getAdminData() async {
     try {
-      QuerySnapshot adminSnapshot = await FirebaseFirestore.instance.collection('Admin').get();
-      List<Map<String, dynamic>> admins = adminSnapshot.docs.map((doc) {
-        return doc.data() as Map<String, dynamic>;
-      }).toList();
+      // Fetch users where userType is 'Admin'
+      QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('userType', isEqualTo: 'Admin')
+          .get();
 
-      List<Map<String, dynamic>> retrieveAdminData = [];
-
-      for (var admin in admins) {
-        var userID = admin['userID'];
-        var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
-        var user = userSnapshot.data() as Map<String, dynamic>;
-
-        Map<String, dynamic> adminData = {
-          'userID': admin['userID'] ?? '',
+      List<Map<String, dynamic>> retrieveAdminData = userSnapshot.docs.map((doc) {
+        var user = doc.data() as Map<String, dynamic>;
+        return {
+          'userID': doc.id,
           'name': user['name'] ?? '',
           'email': user['email'] ?? '',
           'contactNo': user['contactNo'] ?? '',
           'password': user['password'] ?? '',
           'userType': user['userType'] ?? '',
         };
+      }).toList();
 
-        if ((selectedAdmin == 'All' || adminData['name'] == selectedAdmin)) {
-          retrieveAdminData.add(adminData);
-        }
+      // Apply filtering based on selectedAdmin if necessary
+      if (selectedAdmin != 'All') {
+        retrieveAdminData = retrieveAdminData
+            .where((admin) => admin['name'] == selectedAdmin)
+            .toList();
       }
 
       return retrieveAdminData;

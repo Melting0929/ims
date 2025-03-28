@@ -5,11 +5,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'download_guideline.dart';
+import 'manage_external.dart';
 import 'login_web.dart';
 import 'eprofile_student.dart';
 import 'color.dart';
 
-// Date Applied
 // Upload Resume & Delete Resume File Name
 class StudentDashboard extends StatefulWidget {
   final String userId;
@@ -30,6 +30,10 @@ class StudentDashboardState extends State<StudentDashboard> {
 
   PlatformFile? _selectedDocument;
   String? _uploadedFileName;
+
+  final Color headingRowColor = Colors.black;
+  final Color rowEvenColor = Colors.grey.shade100;
+  final Color rowOddColor = Colors.white;
 
   @override
   void initState() {
@@ -129,6 +133,7 @@ class StudentDashboardState extends State<StudentDashboard> {
           'jobTitle': jobData['jobTitle'] ?? 'Unknown',
           'companyID': companyID,
           'companyName': companyData['companyName'] ?? 'Unknown',
+          'dateApplied': data['dateApplied'] ?? 'No Date',
         });
       }));
   
@@ -285,9 +290,9 @@ class StudentDashboardState extends State<StudentDashboard> {
         if (existingResumeUrl != null && existingResumeUrl.isNotEmpty) {
           try {
             String storagePath = Uri.decodeFull(existingResumeUrl)
-                .split('?').first // Remove query parameters
-                .replaceFirst(RegExp(r'^https://firebasestorage\.googleapis\.com/v0/b/[^/]+/o/'), ''); // Remove base URL
-            storagePath = storagePath.replaceAll('%2F', '/'); // Decode encoded slashes
+                .split('?').first
+                .replaceFirst(RegExp(r'^https://firebasestorage\.googleapis\.com/v0/b/[^/]+/o/'), '');
+            storagePath = storagePath.replaceAll('%2F', '/');
             
             final oldFileRef = FirebaseStorage.instance.ref().child(storagePath);
             
@@ -458,7 +463,7 @@ class StudentDashboardState extends State<StudentDashboard> {
                     title: "Apply External Company Page",
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                      MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
                     ),
                   ),
                   buildDrawerItem(
@@ -592,22 +597,24 @@ class StudentDashboardState extends State<StudentDashboard> {
                               child: SizedBox(
                                 width: 1200, 
                                 child: PaginatedDataTable(
-                                  columnSpacing: 20,
-                                  horizontalMargin: 16,
+                                  columnSpacing: 16,
                                   dividerThickness: 1.5,
+                                  horizontalMargin: 16,
+                                  showFirstLastButtons: true,
                                   columns: const [
                                     DataColumn(label: Text("Job Title", style: TextStyle(color: Colors.white))),
                                     DataColumn(label: Text("Company Name", style: TextStyle(color: Colors.white))),
                                     DataColumn(label: Text("Application Status", style: TextStyle(color: Colors.white))),
                                     DataColumn(label: Text("Interview Status", style: TextStyle(color: Colors.white))),
+                                    DataColumn(label: Text("Date Applied", style: TextStyle(color: Colors.white))),
+                                    DataColumn(label: Text("Action", style: TextStyle(color: Colors.white))),
                                   ],
-                                  source: ApplicationDataSource(applications),
-                                  rowsPerPage: 4,
-                                  showFirstLastButtons: true,
+                                  source: ApplicationDataSource(applications, context, rowEvenColor, rowOddColor),
                                   dataRowMinHeight: 10,
                                   headingRowHeight: 60,
+                                  rowsPerPage: 4,
                                   headingRowColor: WidgetStateProperty.resolveWith(
-                                    (states) => Colors.black,
+                                    (states) => headingRowColor,
                                   ),
                                 ),
                               ),
@@ -627,19 +634,75 @@ class StudentDashboardState extends State<StudentDashboard> {
 // DataTable Source for pagination
 class ApplicationDataSource extends DataTableSource {
   final List<Map<String, dynamic>> applications;
+  final BuildContext context;
+  final Color rowEvenColor;
+  final Color rowOddColor;
 
-  ApplicationDataSource(this.applications);
+  ApplicationDataSource(this.applications, this.context, this.rowEvenColor, this.rowOddColor);
 
   @override
   DataRow? getRow(int index) {
     if (index >= applications.length) return null;
 
-    var application = applications[index];
-    return DataRow(cells: [
-      DataCell(Text(application['jobTitle'] ?? 'N/A')),
-      DataCell(Text(application['companyName'] ?? 'N/A')),
-      DataCell(Text(application['applicationStatus'] ?? 'Pending')),
-      DataCell(Text(application['interviewStatus'] ?? 'N/A')),
+    final item = applications[index];
+    final isEven = index % 2 == 0;
+    return DataRow(
+      color: WidgetStateProperty.resolveWith(
+        (states) => isEven ? rowEvenColor : rowOddColor,
+      ),
+      cells: [
+      DataCell(Text(item['jobTitle'] ?? 'N/A')),
+      DataCell(Text(item['companyName'] ?? 'N/A')),
+      DataCell(Text(item['applicationStatus'] ?? 'Pending')),
+      DataCell(Text(item['interviewStatus'] ?? 'N/A')),
+      DataCell(Text(item['dateApplied'] ?? 'N/A')),
+      DataCell(
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.orange),
+              onPressed: () async {
+                final applicationID = item['applicationID'] ?? '';
+
+                if (applicationID.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Invalid application ID.')),
+                  );
+                  return;
+                }
+
+                final confirm = await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirm Cancellation'),
+                    content: const Text('Are you sure you want to cancel this application?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('No'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.mutedBlue,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text("Yes, Cancel", style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (confirm == true) {
+                  await deleteApplication(context, applicationID);
+
+                  applications.removeWhere((element) => element['applicationID'] == applicationID);
+                  notifyListeners();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     ]);
   }
 
@@ -652,3 +715,26 @@ class ApplicationDataSource extends DataTableSource {
   @override
   int get selectedRowCount => 0;
 }
+
+Future<void> deleteApplication(BuildContext context, String applicationID) async {
+    try {
+      // Reference to Firestore document
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('Application')
+          .doc(applicationID)
+          .get();
+
+      if (docSnapshot.exists) {
+        // Delete document from Firestore
+        await FirebaseFirestore.instance.collection('Application').doc(applicationID).delete();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Application $applicationID deleted successfully!')),
+        );
+      } 
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting application: $e')),
+      );
+    }
+  }

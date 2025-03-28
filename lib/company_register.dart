@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'register_success.dart';
+import 'color.dart';
 
 class CompanySignUpPage extends StatefulWidget {
   const CompanySignUpPage({super.key});
@@ -170,321 +171,332 @@ class _CompanySignUpPageState extends State<CompanySignUpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Center(child: Text("Company Sign Up")),
-        backgroundColor: const Color(0xFFE6AA68),
+        title: const Text("New Company Registration"),
+        centerTitle: true,
+        backgroundColor: AppColors.backgroundGreen,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.home, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context); 
+          },
+        ),
       ),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.all(16.0),
-          color: const Color(0xFFE9C46A),
-          child: Form(
-            key: formKey,
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 8,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [                    
-                    const Center(
-                      child: Text(
-                        "Sign Up as Our Industry Partner",
-                        style: TextStyle(
-                          fontSize: 34.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+          color: AppColors.backgroundGreen,
+          child: Center(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.4,
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 8,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          "Sign Up as Our Industry Partner",
+                          style: TextStyle(
+                            fontSize: 34.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Center(
-                      child: Text(
-                        "Enter details to apply",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
+                      const SizedBox(height: 8),
+                      const Center(
+                        child: Text(
+                          "Enter details to apply",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 20.0),
-                    TextFormField(
-                      controller: companyNameController,
-                      decoration: InputDecoration(
-                        labelText: "Company Name",
-                        hintText: "Enter the company name",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 20.0),
+                      TextFormField(
+                        controller: companyNameController,
+                        decoration: InputDecoration(
+                          labelText: "Company Name",
+                          hintText: "Enter the company name",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.apartment_outlined),
                         ),
-                        prefixIcon: const Icon(Icons.apartment_outlined),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter the company name.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter the company name.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyAddressController,
-                      decoration: InputDecoration(
-                        labelText: "Company Address",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyAddressController,
+                        decoration: InputDecoration(
+                          labelText: "Company Address",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.home),
                         ),
-                        prefixIcon: const Icon(Icons.home),
+                        maxLines: 5, // Allows up to 5 lines for longer text input
+                        keyboardType: TextInputType.multiline, // Enables multiline input
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter a valid company address.";
+                          }
+                          return null;
+                        },
                       ),
-                      maxLines: 5, // Allows up to 5 lines for longer text input
-                      keyboardType: TextInputType.multiline, // Enables multiline input
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter a valid company address.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyRegNoController,
-                      decoration: InputDecoration(
-                        labelText: "Company Registration No",
-                        hintText: "Enter the registration number",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyRegNoController,
+                        decoration: InputDecoration(
+                          labelText: "Company Registration No",
+                          hintText: "Enter the registration number",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.pin),
                         ),
-                        prefixIcon: const Icon(Icons.pin),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Company registration number cannot be empty.";
+                          }
+                          if (!companyRegNoRegExp.hasMatch(value)) {
+                            return "Please enter a valid company registration number.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Company registration number cannot be empty.";
-                        }
-                        if (!companyRegNoRegExp.hasMatch(value)) {
-                          return "Please enter a valid company registration number.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyYearController,
-                      decoration: InputDecoration(
-                        labelText: "Company Establish Year",
-                        hintText: "Enter the year the company was established",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyYearController,
+                        decoration: InputDecoration(
+                          labelText: "Company Establish Year",
+                          hintText: "Enter the year the company was established",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.calendar_month),
                         ),
-                        prefixIcon: const Icon(Icons.calendar_month),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Company established year cannot be empty.";
+                          }
+                          if (!yearRegExp.hasMatch(value)) {
+                            return "Please enter a valid company established year (e.g. 2025).";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Company established year cannot be empty.";
-                        }
-                        if (!yearRegExp.hasMatch(value)) {
-                          return "Please enter a valid company established year (e.g. 2025).";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyDescController,
-                      decoration: InputDecoration(
-                        labelText: "Company Description",
-                        hintText: "Provide a brief description of the company",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyDescController,
+                        decoration: InputDecoration(
+                          labelText: "Company Description",
+                          hintText: "Provide a brief description of the company",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.description),
                         ),
-                        prefixIcon: const Icon(Icons.description),
+                        maxLines: 5, // Allows up to 5 lines for longer text input
+                        keyboardType: TextInputType.multiline, // Enables multiline input
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter a valid company description.";
+                          } else if (value.length < 20) {
+                            return "The description should be at least 20 characters long.";
+                          }
+                          return null;
+                        },
                       ),
-                      maxLines: 5, // Allows up to 5 lines for longer text input
-                      keyboardType: TextInputType.multiline, // Enables multiline input
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter a valid company description.";
-                        } else if (value.length < 20) {
-                          return "The description should be at least 20 characters long.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Company Industry Field
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: "Company Industry",
-                        hintText: "Select the main company industry",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 16),
+                      // Company Industry Field
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: "Company Industry",
+                          hintText: "Select the main company industry",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.villa),
                         ),
-                        prefixIcon: const Icon(Icons.villa),
-                      ),
-                      items: <String>['Software Technology', 'Manufacturing', 'Retail Store', 'E-Commerce'] 
-                          .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          companyIndustry = newValue ?? '';
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please select a industry.";
-                        }
-                        return null;
-                      },
-                    ),  
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyEmpNoController,
-                      decoration: InputDecoration(
-                        labelText: "Number of Employee of the Company",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        items: <String>['Software Technology', 'Manufacturing', 'Retail Store', 'E-Commerce'] 
+                            .map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            companyIndustry = newValue ?? '';
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please select a industry.";
+                          }
+                          return null;
+                        },
+                      ),  
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyEmpNoController,
+                        decoration: InputDecoration(
+                          labelText: "Number of Employee of the Company",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.badge),
                         ),
-                        prefixIcon: const Icon(Icons.badge),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter a valid employee numbers (e.g. 130).";
+                          }
+                          if (!empNoRegExp.hasMatch(value)) {
+                            return "Please enter a valid employee numbers (e.g. 130).";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter a valid employee numbers (e.g. 130).";
-                        }
-                        if (!empNoRegExp.hasMatch(value)) {
-                          return "Please enter a valid employee numbers (e.g. 130).";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyEmailController,
-                      decoration: InputDecoration(
-                        labelText: "Company Email",
-                        hintText: "Enter the company email address",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyEmailController,
+                        decoration: InputDecoration(
+                          labelText: "Company Email",
+                          hintText: "Enter the company email address",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.email),
                         ),
-                        prefixIcon: const Icon(Icons.email),
+                        validator: (value) {
+                          if (value == null || !emailRegExp.hasMatch(value)) {
+                            return "Please enter a valid company email address.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || !emailRegExp.hasMatch(value)) {
-                          return "Please enter a valid company email address.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: companyContactNoController,
-                      decoration: InputDecoration(
-                        labelText: "Contact Number",
-                        hintText: "Enter the company contact number",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: companyContactNoController,
+                        decoration: InputDecoration(
+                          labelText: "Contact Number",
+                          hintText: "Enter the company contact number",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.call),
                         ),
-                        prefixIcon: const Icon(Icons.call),
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty && !phoneRegExp.hasMatch(value)) {
+                            return "Please enter a valid company contact number.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty && !phoneRegExp.hasMatch(value)) {
-                          return "Please enter a valid company contact number.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: placementContactNameController,
-                      decoration: InputDecoration(
-                        labelText: "Placement Contact Full Name",
-                        hintText: "Enter the placement contact full name",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: placementContactNameController,
+                        decoration: InputDecoration(
+                          labelText: "Placement Contact Full Name",
+                          hintText: "Enter the placement contact full name",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.people),
                         ),
-                        prefixIcon: const Icon(Icons.people),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter the placement contact full name.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter the placement contact full name.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: placementContactJobTitleController,
-                      decoration: InputDecoration(
-                        labelText: "Placement Contact Job Title",
-                        hintText: "Enter the placement contact job title",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: placementContactJobTitleController,
+                        decoration: InputDecoration(
+                          labelText: "Placement Contact Job Title",
+                          hintText: "Enter the placement contact job title",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.work),
                         ),
-                        prefixIcon: const Icon(Icons.work),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter a valid placement contact job title.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter a valid placement contact job title.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    TextFormField(
-                      controller: placementContactEmailController,
-                      decoration: InputDecoration(
-                        labelText: "Placement Contact Email",
-                        hintText: "Enter the placement contact email address",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 10.0),
+                      TextFormField(
+                        controller: placementContactEmailController,
+                        decoration: InputDecoration(
+                          labelText: "Placement Contact Email",
+                          hintText: "Enter the placement contact email address",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.email),
                         ),
-                        prefixIcon: const Icon(Icons.email),
+                        validator: (value) {
+                          if (value == null || !emailRegExp.hasMatch(value)) {
+                            return "Please enter a valid placement contact email address.";
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || !emailRegExp.hasMatch(value)) {
-                          return "Please enter a valid placement contact email address.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10.0),
-                    const Text("Company Logo:"),
-                    const SizedBox(height: 5.0),
-                    ElevatedButton.icon(
-                      onPressed: pickLogo,
-                      icon: const Icon(Icons.upload_file),
-                      label: Text(_selectedLogoBytes == null ? 'Upload Logo' : 'Change Logo'),
-                    ),
-                    const SizedBox(height: 10.0),
-                    if (_selectedLogoBytes != null) 
-                    Image.memory(_selectedLogoBytes!, height: 100),
-                    const SizedBox(height: 20.0),
-                    Center(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE9C46A),
-                          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                      const SizedBox(height: 10.0),
+                      const Text("Company Logo:"),
+                      const SizedBox(height: 5.0),
+                      ElevatedButton.icon(
+                        onPressed: pickLogo,
+                        icon: const Icon(Icons.upload_file),
+                        label: Text(_selectedLogoBytes == null ? 'Upload Logo' : 'Change Logo'),
+                      ),
+                      const SizedBox(height: 10.0),
+                      if (_selectedLogoBytes != null) 
+                      Image.memory(_selectedLogoBytes!, height: 100),
+                      const SizedBox(height: 20.0),
+                      Center(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE9C46A),
+                            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              addCompany();
+                            }
+                          },
+                          child: const Text(
+                            "Sign Up",
+                            style: TextStyle(fontSize: 18, color: Colors.white),
                           ),
                         ),
-                        onPressed: () {
-                          if (formKey.currentState!.validate()) {
-                            addCompany();
-                          }
-                        },
-                        child: const Text(
-                          "Sign Up",
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
