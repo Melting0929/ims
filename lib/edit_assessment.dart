@@ -7,7 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class EditAssessment extends StatefulWidget {
   final String assessmentID;
   final String userId;
-  const EditAssessment({super.key, required this.assessmentID, required this.userId});
+  final VoidCallback refreshCallback;
+  const EditAssessment({super.key, required this.assessmentID, required this.userId, required this.refreshCallback});
 
   @override
   State<EditAssessment> createState() => _EditAssessmentState();
@@ -413,7 +414,8 @@ class _EditAssessmentState extends State<EditAssessment> {
                                                   .update(updatedassessmentData);
                                               
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assessment updated successfully')));
-                                              Navigator.pop(context, true);
+                                              widget.refreshCallback();
+                                              Navigator.of(context).pop(true);
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update assessment')));
                                               debugPrint("Error updating assessment: $e");

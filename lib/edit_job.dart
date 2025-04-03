@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EditJob extends StatefulWidget {
   final String jobId;
-  const EditJob({super.key, required this.jobId});
+  final VoidCallback refreshCallback;
+  const EditJob({super.key, required this.jobId, required this.refreshCallback});
 
   @override
   EditJobTab createState() => EditJobTab();
@@ -20,12 +21,65 @@ class EditJobTab extends State<EditJob> {
   String jobDesc = 'Loading...';
   String jobType = "Loading...";
   String jobStatus = "Loading...";
+  String program = "Loading...";
 
   double jobAllowance = 0.0;
   int jobDuration = 0;
   int numApplicant = 0;
 
   List<String> jobTags = [];
+
+    List<String> programs = [
+    'Mechanical Engineering',
+    'Civil Engineering',
+    'Electrical Engineering',
+    'Aerospace Engineering',
+    'Mechatronics Engineering',
+    'Biomedical Engineering',
+    'Chemical Engineering',
+    'Computer Science',
+    'Information Technology',
+    'Software Engineering',
+    'Cybersecurity',
+    'Data Science',
+    'Game Development',
+    'Business Administration',
+    'Finance & Banking',
+    'Accounting',
+    'Human Resource Management',
+    'Supply Chain Management',
+    'Entrepreneurship',
+    'Digital Marketing',
+    'Brand Management',
+    'Market Research',
+    'Advertising & Media',
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biotechnology',
+    'Environmental Science',
+    'Medicine',
+    'Nursing',
+    'Pharmacy',
+    'Physiotherapy',
+    'Dentistry',
+    'Biomedical Science',
+    'Graphic Design',
+    'Multimedia & Animation',
+    'Film & Television Production',
+    'Fine Arts',
+    'Interior Design',
+    'Psychology',
+    'Sociology',
+    'Political Science',
+    'International Relations',
+    'Law',
+    'Communication & Media Studies',
+    'Early Childhood Education',
+    'Primary Education',
+    'Secondary Education',
+    'TESOL',
+  ];
 
   // Text editing controllers
   final TextEditingController jobIDController = TextEditingController();
@@ -274,6 +328,39 @@ class EditJobTab extends State<EditJob> {
                                 ),
                                 const SizedBox(height: 16),
                                 const Text(
+                                  "Desired Candidate Program:",
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.school),
+                                  ),
+                                  hint: const Text("Select a program"),
+                                  items: programs
+                                      .map<DropdownMenuItem<String>>((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      program = newValue ?? '';
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Please select a desired student program.";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
                                   "Assign Job Tags",
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
@@ -359,6 +446,7 @@ class EditJobTab extends State<EditJob> {
                                                 'jobDuration': updatedJobDuration,
                                                 'numApplicant': updatedNumApplicant,
                                                 'tags': jobTags,
+                                                'program': program,
                                               };
 
                                               await FirebaseFirestore.instance
@@ -367,7 +455,8 @@ class EditJobTab extends State<EditJob> {
                                                   .update(updatedData);
 
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job updated successfully')));
-                                              Navigator.of(context).pop();
+                                              widget.refreshCallback();
+                                              Navigator.of(context).pop(true);
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update job')));
                                               debugPrint("Error updating job: $e");

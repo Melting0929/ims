@@ -367,7 +367,7 @@ void initState() {
         DataColumn(label: Text('User Created', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
-      source: JobData(data, context, rowEvenColor, rowOddColor), 
+      source: JobData(data, context, rowEvenColor, rowOddColor, _refreshData), 
     );
   }
 
@@ -514,6 +514,20 @@ void initState() {
       ],
     );
   }
+
+  Future<void> _navigateToAddJob(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddJob(userId: widget.userId, refreshCallback: _refreshData),
+      ),
+    );
+
+    if (result == true) {
+      _refreshData(); // Refresh data when returning from the update page
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -676,13 +690,7 @@ void initState() {
                 children: [
                    _buildTab(
                     title: "Manage External Jobs",
-                    onAdd: () => 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddJob(userId: widget.userId),
-                      ),
-                    ),
+                    onAdd: () => _navigateToAddJob(context),
                     onRefresh: _refreshData,
                     future: _getExternalData(),
                     builder: _buildTable,
@@ -910,8 +918,9 @@ class JobData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  JobData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  JobData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -940,13 +949,16 @@ class JobData extends DataTableSource {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditJob(jobId: jobID),
+                    builder: (context) => EditJob(jobId: jobID, refreshCallback: refreshCallback,),
                   ),
                 );
+                if (result == true) {
+                  refreshCallback(); // Refresh data when returning from the update page
+                }
               },
             ),
             IconButton(

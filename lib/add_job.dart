@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddJob extends StatefulWidget {
   final String userId;
-  const AddJob({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const AddJob({super.key, required this.userId, required this.refreshCallback});
 
   @override
   State<AddJob> createState() => _AddJobState();
@@ -16,6 +17,7 @@ class _AddJobState extends State<AddJob> {
   final _formKey = GlobalKey<FormState>();
   String jobStatus = '';
   String jobType = '';
+  String program = '';
   String userType = '';
   List<String> jobTags = [];
 
@@ -23,6 +25,58 @@ class _AddJobState extends State<AddJob> {
   String? selectedCompanyName;
   List<String> companyNames = [];
   Map<String, String> companyMap = {};
+
+  List<String> programs = [
+    'Mechanical Engineering',
+    'Civil Engineering',
+    'Electrical Engineering',
+    'Aerospace Engineering',
+    'Mechatronics Engineering',
+    'Biomedical Engineering',
+    'Chemical Engineering',
+    'Computer Science',
+    'Information Technology',
+    'Software Engineering',
+    'Cybersecurity',
+    'Data Science',
+    'Game Development',
+    'Business Administration',
+    'Finance & Banking',
+    'Accounting',
+    'Human Resource Management',
+    'Supply Chain Management',
+    'Entrepreneurship',
+    'Digital Marketing',
+    'Brand Management',
+    'Market Research',
+    'Advertising & Media',
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biotechnology',
+    'Environmental Science',
+    'Medicine',
+    'Nursing',
+    'Pharmacy',
+    'Physiotherapy',
+    'Dentistry',
+    'Biomedical Science',
+    'Graphic Design',
+    'Multimedia & Animation',
+    'Film & Television Production',
+    'Fine Arts',
+    'Interior Design',
+    'Psychology',
+    'Sociology',
+    'Political Science',
+    'International Relations',
+    'Law',
+    'Communication & Media Studies',
+    'Early Childhood Education',
+    'Primary Education',
+    'Secondary Education',
+    'TESOL',
+  ];
 
   // Text editing controllers
   final TextEditingController jobTitleController = TextEditingController();
@@ -141,6 +195,7 @@ class _AddJobState extends State<AddJob> {
         'jobTitle': jobTitleController.text.trim(),
         'jobDesc': jobDescController.text.trim(),
         'jobType': jobType,
+        'program': program,
         'jobStatus': jobStatus,
         'jobAllowance': double.tryParse(jobAllowanceController.text.trim()) ?? 0.0,
         'jobDuration': int.tryParse(jobDurationController.text.trim()) ?? 0,
@@ -165,7 +220,8 @@ class _AddJobState extends State<AddJob> {
         numApplicantController.clear();
         tagsController.clear();
 
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
 
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -381,6 +437,39 @@ class _AddJobState extends State<AddJob> {
                                   validator: (value) {
                                     if (value == null || value.isEmpty || !numRegExp.hasMatch(value)) {
                                       return "Please enter a valid number of applicant needed (e.g. 3).";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  "Desired Candidate Program:",
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.school),
+                                  ),
+                                  hint: const Text("Select a program"),
+                                  items: programs
+                                      .map<DropdownMenuItem<String>>((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      program = newValue ?? '';
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Please select a desired student program.";
                                     }
                                     return null;
                                   },

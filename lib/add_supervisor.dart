@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddSupervisorPage extends StatefulWidget {
   final String userType;
-  const AddSupervisorPage({super.key, required this.userType});
+  final VoidCallback refreshCallback;
+  const AddSupervisorPage({super.key, required this.userType, required this.refreshCallback});
 
   @override
   State<AddSupervisorPage> createState() => _AddSupervisorPageState();
@@ -15,6 +16,7 @@ class AddSupervisorPage extends StatefulWidget {
 class _AddSupervisorPageState extends State<AddSupervisorPage> {
   final _formKey = GlobalKey<FormState>();
   String supervisorDept = '';
+  List<String> depts = ['Engineering','IT','Business','Marketing','Science','Health & Medical','Arts & Design','Social Sciences','Education'];
 
   // Text editing controllers
   final TextEditingController supervisorNameController = TextEditingController();
@@ -62,7 +64,8 @@ class _AddSupervisorPageState extends State<AddSupervisorPage> {
         supervisorContactNoController.clear();
         supervisorIDController.clear();
 
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
 
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,7 +222,7 @@ class _AddSupervisorPageState extends State<AddSupervisorPage> {
                                     ),
                                     prefixIcon: const Icon(Icons.call),
                                   ),
-                                  items: <String>['Engineering', 'IT', 'Business', 'Marketing'] 
+                                  items: depts 
                                       .map<DropdownMenuItem<String>>((String value) {
                                     return DropdownMenuItem<String>(
                                       value: value,

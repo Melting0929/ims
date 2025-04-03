@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddAdminPage extends StatefulWidget {
   final String userType;
-  const AddAdminPage({super.key, required this.userType});
+  final VoidCallback refreshCallback;
+  const AddAdminPage({super.key, required this.userType, required this.refreshCallback});
 
   @override
   State<AddAdminPage> createState() => _AddAdminPageState();
@@ -18,7 +19,7 @@ class _AddAdminPageState extends State<AddAdminPage> {
   final TextEditingController adminEmailController = TextEditingController();
   final TextEditingController adminContactNoController = TextEditingController();
 
-  RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\$');
+  RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
 
   Future<void> saveUser() async {
@@ -41,7 +42,8 @@ class _AddAdminPageState extends State<AddAdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User added successfully!')),
         );
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding admin: $e')),
@@ -110,11 +112,62 @@ class _AddAdminPageState extends State<AddAdminPage> {
                                   style: TextStyle(fontSize: 16, color: Colors.black),
                                 ),
                                 const SizedBox(height: 20),
-                                _buildTextField(adminNameController, "Full Name", Icons.people),
+                                // Full Name Field
+                                TextFormField(
+                                  controller: adminNameController,
+                                  decoration: InputDecoration(
+                                    labelText: "Full Name",
+                                    hintText: "Enter the full name",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.people),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Please enter the full name.";
+                                    }
+                                    return null;
+                                  },
+                                ),
                                 const SizedBox(height: 16),
-                                _buildTextField(adminEmailController, "Email", Icons.email, isEmail: true),
+                                // Email Field
+                                TextFormField(
+                                  controller: adminEmailController,
+                                  decoration: InputDecoration(
+                                    labelText: "Email",
+                                    hintText: "Enter the email address",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.email),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || !emailRegExp.hasMatch(value)) {
+                                      return "Please enter a valid email address.";
+                                    }
+                                    return null;
+                                  },
+                                ),
                                 const SizedBox(height: 16),
-                                _buildTextField(adminContactNoController, "Contact Number", Icons.call, isPhone: true),
+                                // Contact Number Field
+                                TextFormField(
+                                  controller: adminContactNoController,
+                                  decoration: InputDecoration(
+                                    labelText: "Contact Number",
+                                    hintText: "Enter the contact number",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.call),
+                                  ),
+                                  validator: (value) {
+                                    if (value != null && value.isNotEmpty && !phoneRegExp.hasMatch(value)) {
+                                      return "Please enter a valid contact number.";
+                                    }
+                                    return null;
+                                  },
+                                ),
                                 const SizedBox(height: 24),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
@@ -140,31 +193,6 @@ class _AddAdminPageState extends State<AddAdminPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isEmail = false, bool isPhone = false}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: Icon(icon, color: Colors.black),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.2),
-      ),
-      style: const TextStyle(color: Colors.black),
-      validator: (value) {
-        if ((value == null || value.isEmpty) && !isPhone) {
-          return "Please enter $label.";
-        }
-        if (isEmail && value!.isNotEmpty && !emailRegExp.hasMatch(value)) {
-          return "Please enter a valid email.";
-        }
-        if (isPhone && value!.isNotEmpty && !phoneRegExp.hasMatch(value)) {
-          return "Please enter a valid contact number.";
-        }
-        return null;
-      },
-    );
-  }
 
   Widget _buildButton(String text, Color color, VoidCallback onPressed) {
     return ElevatedButton(

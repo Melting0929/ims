@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ims/internship_recommend.dart';
 import 'login_web.dart';
 import 'eprofile_student.dart';
 import 'student_dashboard.dart';
@@ -109,19 +110,28 @@ void initState() {
 
   Future<void> fetchStudentDetails() async {
     try {
-      var studentSnapshot = await FirebaseFirestore.instance
-          .collection('Student')
-          .where('userID', isEqualTo: widget.userId)
+      var userDoc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(widget.userId)
           .get();
 
-      if (studentSnapshot.docs.isNotEmpty) {
-        var studentData = studentSnapshot.docs.first.data();
+      if (userDoc.exists) {
         setState(() {
-          studID = studentData['studID'] ?? 'No studID';
-
+          studentEmail = userDoc.data()?['email'] ?? 'No Email';
+          studentName = userDoc.data()?['name'] ?? 'No Name';
         });
-      } else {
-        debugPrint('No student details found for the userId: ${widget.userId}');
+
+        var studentDoc = await FirebaseFirestore.instance
+            .collection('Student')
+            .where('userID', isEqualTo: widget.userId)
+            .get();
+
+        if (studentDoc.docs.isNotEmpty) {
+          var studentData = studentDoc.docs.first.data();
+          setState(() {
+            studID = studentData['studID'] ?? 'No ID';
+          });
+        }
       }
     } catch (e) {
       debugPrint("Error fetching student details: $e");
@@ -310,6 +320,14 @@ void initState() {
                   ),
                   buildDrawerItem(
                     icon: Icons.apartment,
+                    title: "Internship Recommendation Page",
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
+                    ),
+                  ),
+                  buildDrawerItem(
+                    icon: Icons.apartment,
                     title: "Apply External Company Page",
                     onTap: () => Navigator.push(
                       context,
@@ -379,13 +397,16 @@ void initState() {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddExternal(userId: widget.userId),
+                              builder: (context) => AddExternal(userId: widget.userId, refreshCallback: _refreshData),
                             ),
                           );
+                          if (result == true) {
+                            _refreshData(); // Refresh data when returning from the update page
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryYellow,

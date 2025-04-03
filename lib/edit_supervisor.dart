@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EditSupervisor extends StatefulWidget {
   final String userId;
-  const EditSupervisor({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const EditSupervisor({super.key, required this.userId, required this.refreshCallback});
 
   @override
   EditSupervisorTab createState() => EditSupervisorTab();
@@ -22,6 +23,8 @@ class EditSupervisorTab extends State<EditSupervisor> {
   String supervisorPassword = "Loading...";
   String supervisorDept = "Loading...";
   String supervisorID = "Loading...";
+
+  List<String> depts = ['Engineering','IT','Business','Marketing','Science','Health & Medical','Arts & Design','Social Sciences','Education'];
 
   // Text editing controllers
   final TextEditingController supervisorNameController = TextEditingController();
@@ -254,7 +257,7 @@ class EditSupervisorTab extends State<EditSupervisor> {
                                     ),
                                     prefixIcon: const Icon(Icons.apartment),
                                   ),
-                                  items: <String>['Engineering', 'IT', 'Business', 'Marketing'] 
+                                  items: depts
                                       .map<DropdownMenuItem<String>>((String value) {
                                     return DropdownMenuItem<String>(
                                       value: value,
@@ -285,6 +288,7 @@ class EditSupervisorTab extends State<EditSupervisor> {
                                             String updatedEmail = supervisorEmailController.text;
                                             String? updatedPhone = supervisorContactNoController.text.isEmpty ? null : supervisorContactNoController.text;
                                             String updatedPassword = supervisorPasswordController.text;
+                                            String updatedID = supervisorIDController.text;
 
                                             // Update Firestore data
                                             try {
@@ -297,7 +301,7 @@ class EditSupervisorTab extends State<EditSupervisor> {
 
                                               var updatedSupervisorData = {
                                                 'dept': supervisorDept,
-                                                'supervisorID': supervisorID,
+                                                'supervisorID': updatedID,
                                               };
 
                                               await FirebaseFirestore.instance
@@ -315,7 +319,8 @@ class EditSupervisorTab extends State<EditSupervisor> {
                                               }
 
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User updated successfully')));
-                                              Navigator.of(context).pop();
+                                              widget.refreshCallback();
+                                              Navigator.of(context).pop(true);
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update user')));
                                               debugPrint("Error updating profile: $e");

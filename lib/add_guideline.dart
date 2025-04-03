@@ -8,7 +8,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'color.dart';
 
 class AddGuideline extends StatefulWidget {
-  const AddGuideline({super.key});
+  final VoidCallback refreshCallback;
+  const AddGuideline({super.key, required this.refreshCallback});
 
   @override
   State<AddGuideline> createState() => _AddGuidelineState();
@@ -114,6 +115,8 @@ class _AddGuidelineState extends State<AddGuideline> {
           _selectedDocument = null;
           _uploadedFileName = null;
         });
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding guideline: $e')),

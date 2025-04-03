@@ -10,7 +10,8 @@ import 'color.dart';
 
 class EditCompany extends StatefulWidget {
   final String userId;
-  const EditCompany({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const EditCompany({super.key, required this.userId, required this.refreshCallback});
 
   @override
   EditCompanyTab createState() => EditCompanyTab();
@@ -39,6 +40,54 @@ class EditCompanyTab extends State<EditCompany> {
   String? logoURL;
   String companyID = "Loading...";
 
+  List<String> companyIndustries = [
+    'Information Technology',
+    'Software Development',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Manufacturing',
+    'Construction',
+    'Real Estate',
+    'Telecommunications',
+    'Marketing & Advertising',
+    'Automotive',
+    'E-commerce',
+    'Energy & Utilities',
+    'Hospitality',
+    'Transportation & Logistics',
+    'Media & Entertainment',
+    'Insurance',
+    'Pharmaceuticals',
+    'Food & Beverage',
+    'Retail Store',
+    'Tourism',
+    'Non-Profit',
+    'Government & Public Sector',
+    'Legal Services',
+    'Consulting',
+    'Research & Development',
+    'Architecture',
+    'Agriculture',
+    'Electronics',
+    'Fashion & Apparel',
+    'Sports & Recreation',
+    'Financial Services',
+    'Aerospace & Defense',
+    'Biotechnology',
+    'Chemicals',
+    'Marine & Shipping',
+    'Wholesale & Distribution',
+    'Human Resources',
+    'Security Services',
+    'Art & Design',
+    'Environmental Services',
+    'Healthcare Services',
+    'IT Services',
+    'Logistics & Supply Chain',
+    'Media Production',
+    'Event Management',
+  ];
 
   // Text editing controllers
   final TextEditingController companyNameController = TextEditingController();
@@ -59,8 +108,7 @@ class EditCompanyTab extends State<EditCompany> {
   final TextEditingController companyPasswordController = TextEditingController();
   final TextEditingController placementContactJobTitleController = TextEditingController();
 
-  RegExp companyRegNoRegExp = RegExp(r'^[a-zA-Z0-9]+$');
-  RegExp yearRegExp = RegExp(r'^(19|20)\d{2}$');
+  RegExp yearRegExp = RegExp(r'^(1|2)\d{3}$');
   RegExp empNoRegExp = RegExp(r'^[0-9]+$');
   RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
@@ -479,9 +527,6 @@ class EditCompanyTab extends State<EditCompany> {
                                   if (value == null || value.isEmpty) {
                                     return "Company registration number cannot be empty.";
                                   }
-                                  if (!companyRegNoRegExp.hasMatch(value)) {
-                                    return "Please enter a valid company registration number.";
-                                  }
                                   return null;
                                 },
                               ),
@@ -539,7 +584,7 @@ class EditCompanyTab extends State<EditCompany> {
                                   ),
                                   prefixIcon: const Icon(Icons.villa),
                                 ),
-                                items: <String>['Software Technology', 'Manufacturing', 'Retail Store', 'E-Commerce'] 
+                                items: companyIndustries
                                     .map<DropdownMenuItem<String>>((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
@@ -673,7 +718,8 @@ class EditCompanyTab extends State<EditCompany> {
                                             }
 
                                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
-                                            Navigator.of(context).pop();
+                                            widget.refreshCallback();
+                                            Navigator.of(context).pop(true);
                                           } catch (e) {
                                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile')));
                                             debugPrint("Error updating profile: $e");

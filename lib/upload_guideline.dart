@@ -181,7 +181,7 @@ void initState() {
         DataColumn(label: Text('Access Type', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: GuidelineData(filteredData, context, rowEvenColor, rowOddColor),
+      source: GuidelineData(filteredData, context, rowEvenColor, rowOddColor, _refreshData),
     );
   }
 
@@ -376,13 +376,16 @@ void initState() {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AddGuideline(),
+                              builder: (context) => AddGuideline(refreshCallback: _refreshData),
                             ),
                           );
+                          if (result == true) {
+                            _refreshData(); // Refresh data when returning from the update page
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryYellow,
@@ -457,8 +460,9 @@ class GuidelineData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  GuidelineData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  GuidelineData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -503,13 +507,16 @@ class GuidelineData extends DataTableSource {
             children: [
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditGuideline(docId: item['docID']),
+                      builder: (context) => EditGuideline(docId: item['docID'], refreshCallback: refreshCallback),
                     ),
                   );
+                  if (result == true) {
+                    refreshCallback(); // Refresh data when returning from the update page
+                  }
                 },
               ),
               IconButton(

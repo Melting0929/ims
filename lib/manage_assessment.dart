@@ -317,7 +317,7 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         DataColumn(label: Text('Submission Status', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: AssessmentData(widget.userId, data, context, rowEvenColor, rowOddColor),
+      source: AssessmentData(widget.userId, data, context, rowEvenColor, rowOddColor, _refreshData),
     );
   }
 
@@ -498,13 +498,16 @@ class ManageAssessmentTab extends State<ManageAssessment> {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddAssessment(userId: widget.userId),
+                              builder: (context) => AddAssessment(userId: widget.userId, refreshCallback: _refreshData),
                             ),
                           );
+                          if (result == true) {
+                            _refreshData(); // Refresh data when returning from the update page
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryYellow,
@@ -679,8 +682,9 @@ class AssessmentData extends DataTableSource {
   final Color rowEvenColor;
   final Color rowOddColor;
   final String userId;
+  final VoidCallback refreshCallback;
 
-  AssessmentData(this.userId, this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  AssessmentData(this.userId, this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -746,13 +750,16 @@ class AssessmentData extends DataTableSource {
             children: [
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditAssessment(assessmentID: item['assessmentID'], userId: userId,),
+                      builder: (context) => EditAssessment(assessmentID: item['assessmentID'], userId: userId, refreshCallback: refreshCallback),
                     ),
                   );
+                  if (result == true) {
+                    refreshCallback(); // Refresh data when returning from the update page
+                  }
                 },
               ),
             ],

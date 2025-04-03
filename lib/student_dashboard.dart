@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'download_guideline.dart';
 import 'manage_external.dart';
+import 'internship_recommend.dart';
 import 'login_web.dart';
 import 'eprofile_student.dart';
 import 'color.dart';
@@ -456,6 +457,14 @@ class StudentDashboardState extends State<StudentDashboard> {
                     onTap: () => Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
+                    ),
+                  ),
+                  buildDrawerItem(
+                    icon: Icons.upload_file,
+                    title: "Internship Recommendation Page",
+                    onTap: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
                     ),
                   ),
                   buildDrawerItem(

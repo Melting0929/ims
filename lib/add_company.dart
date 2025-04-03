@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // companyID & contact no. validation
 class AddCompanyPage extends StatefulWidget {
   final String userType;
-  const AddCompanyPage({super.key, required this.userType});
+  final VoidCallback refreshCallback;
+  const AddCompanyPage({super.key, required this.userType, required this.refreshCallback});
 
   @override
   State<AddCompanyPage> createState() => _AddCompanyPageState();
@@ -15,6 +16,55 @@ class AddCompanyPage extends StatefulWidget {
 class _AddCompanyPageState extends State<AddCompanyPage> {
   final _formKey = GlobalKey<FormState>();
   String companyIndustry = '';
+
+    List<String> companyIndustries = [
+    'Information Technology',
+    'Software Development',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Manufacturing',
+    'Construction',
+    'Real Estate',
+    'Telecommunications',
+    'Marketing & Advertising',
+    'Automotive',
+    'E-commerce',
+    'Energy & Utilities',
+    'Hospitality',
+    'Transportation & Logistics',
+    'Media & Entertainment',
+    'Insurance',
+    'Pharmaceuticals',
+    'Food & Beverage',
+    'Retail Store',
+    'Tourism',
+    'Non-Profit',
+    'Government & Public Sector',
+    'Legal Services',
+    'Consulting',
+    'Research & Development',
+    'Architecture',
+    'Agriculture',
+    'Electronics',
+    'Fashion & Apparel',
+    'Sports & Recreation',
+    'Financial Services',
+    'Aerospace & Defense',
+    'Biotechnology',
+    'Chemicals',
+    'Marine & Shipping',
+    'Wholesale & Distribution',
+    'Human Resources',
+    'Security Services',
+    'Art & Design',
+    'Environmental Services',
+    'Healthcare Services',
+    'IT Services',
+    'Logistics & Supply Chain',
+    'Media Production',
+    'Event Management',
+  ];
 
   // Text editing controllers
   final TextEditingController companyNameController = TextEditingController();
@@ -34,8 +84,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
 
   RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
-  RegExp companyRegNoRegExp = RegExp(r'^[a-zA-Z0-9]+$');
-  RegExp yearRegExp = RegExp(r'^(19|20)\d{2}$');
+  RegExp yearRegExp = RegExp(r'^(1|2)\d{3}$');
   RegExp empNoRegExp = RegExp(r'^[0-9]+$');
 
   // Save user to Firestore
@@ -70,7 +119,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           'companyEmpNo': int.tryParse(companyEmpNoController.text.trim()) ?? 0,
           'approvalStatus': 'Approve',
           'pContactJobTitle': placementContactJobTitleController.text.trim(),
-          'companyType': 'Registered',
+          'companyType': 'External',
           'logoURL': '',
         });
 
@@ -89,7 +138,8 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         placementContactEmailController.clear();
         placementContactJobTitleController.clear();
 
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding company: $e')),
@@ -186,7 +236,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     prefixIcon: const Icon(Icons.villa),
                                   ),
-                                  items: <String>["Software Technology", "Manufacturing", "Retail Store", "E-Commerce"]
+                                  items: companyIndustries
                                       .map((String value) => DropdownMenuItem<String>(
                                             value: value,
                                             child: Text(value),
@@ -253,9 +303,6 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         }
         if (isPhone && value!.isNotEmpty && !phoneRegExp.hasMatch(value)) {
           return "Please enter a valid contact number.";
-        }
-        if (isRegister && value!.isNotEmpty && !companyRegNoRegExp.hasMatch(value)) {
-          return "Please enter a valid registration number.";
         }
         if (isYear && value!.isNotEmpty && !yearRegExp.hasMatch(value)) {
           return "Please enter a valid year (e.g., 2005).";

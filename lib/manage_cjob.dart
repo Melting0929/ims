@@ -205,6 +205,7 @@ void initState() {
             'jobAllowance': job['jobAllowance'] ?? '',
             'jobDuration': job['jobDuration'] ?? '',
             'jobType': job['jobType'] ?? '',
+            'program': job['program'] ?? '',
             'jobStatus': job['jobStatus'] ?? '',
             'numApplicant': job['numApplicant'] ?? '',
             'userID': job['userID'],
@@ -251,13 +252,13 @@ void initState() {
         DataColumn(label: Text('Job Description', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Allowance', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Duration', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job Type', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Desired Program', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Status', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Number of\nApplicant Needed', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Tags', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
-      source: JobData(filteredJobs, context, rowEvenColor, rowOddColor), 
+      source: JobData(filteredJobs, context, rowEvenColor, rowOddColor, _refreshData), 
     );
   }
 
@@ -447,13 +448,16 @@ void initState() {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async{
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddJob(userId: widget.userId),
+                              builder: (context) => AddJob(userId: widget.userId, refreshCallback: _refreshData),
                             ),
                           );
+                          if (result == true) {
+                            _refreshData(); // Refresh data when returning from the update page
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondaryYellow,
@@ -558,8 +562,9 @@ class JobData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  JobData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  JobData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -578,7 +583,7 @@ class JobData extends DataTableSource {
         DataCell(Text(item['jobDesc'] ?? '')),
         DataCell(Text(item['jobAllowance'].toString())),
         DataCell(Text(item['jobDuration'].toString())),
-        DataCell(Text(item['jobType'] ?? '')),
+        DataCell(Text(item['program'] ?? '')),
         DataCell(Text(item['jobStatus'] ?? '')),
         DataCell(Text(item['numApplicant'].toString())),
         DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
@@ -587,13 +592,16 @@ class JobData extends DataTableSource {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditJob(jobId: jobID),
+                    builder: (context) => EditJob(jobId: jobID, refreshCallback: refreshCallback,),
                   ),
                 );
+                if (result == true) {
+                  refreshCallback(); // Refresh data when returning from the update page
+                }
               },
             ),
           ],

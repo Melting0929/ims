@@ -10,7 +10,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 class EditGuideline extends StatefulWidget {
   final String docId;
-  const EditGuideline({super.key, required this.docId});
+  final VoidCallback refreshCallback;
+  const EditGuideline({super.key, required this.docId, required this.refreshCallback});
 
   @override
   EditGuidelineTab createState() => EditGuidelineTab();
@@ -297,7 +298,8 @@ class EditGuidelineTab extends State<EditGuideline> {
                                                 });
 
                                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guideline updated successfully')));
-                                                Navigator.pop(context, true);
+                                                widget.refreshCallback();
+                                              Navigator.of(context).pop(true);
                                               } catch (e) {
                                                 debugPrint("Error updating guideline: $e");
                                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update guideline')));

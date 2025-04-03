@@ -10,7 +10,7 @@ import 'supervisor_dashboard.dart';
 import 'manage_cjob.dart';
 import 'manage_applicant.dart';
 import 'manage_assessment.dart';
-import 'apply_external.dart';
+import 'manage_external.dart';
 import 'eprofile_student.dart';
 import 'eprofile_supervisor.dart';
 import 'eprofile_company.dart';
@@ -165,7 +165,7 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
             title: "Apply External Company Page",
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => AddExternal(userId: widget.userId)),
+              MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
             ),
           ),
           buildDrawerItem(

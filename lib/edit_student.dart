@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EditStudent extends StatefulWidget {
   final String userId;
-  const EditStudent({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const EditStudent({super.key, required this.userId, required this.refreshCallback});
 
   @override
   EditStudentTab createState() => EditStudentTab();
@@ -30,6 +31,7 @@ class EditStudentTab extends State<EditStudent> {
   String studentProgram = '';
   String studentSpecialization = '';
   String studentIntakePeriod = '';
+  List<String> skill = [];
 
   String? companyID;
   String? supervisorID;
@@ -38,6 +40,13 @@ class EditStudentTab extends State<EditStudent> {
   String? selectedCompanyName;
   List<String> supervisorOptions = [];
   List<String> companyOptions = [];
+
+  List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
+                        'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
+                        'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
+                        'Jan-Apr 2024', 'May-Aug 2024', 'Sept-Dec 2024', 
+                        'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025'];
+
 
   // Text editing controllers
   final TextEditingController studentNameController = TextEditingController();
@@ -96,7 +105,7 @@ class EditStudentTab extends State<EditStudent> {
         if (filteredSupervisorNames.isNotEmpty) {
           setState(() {
             supervisorOptions = filteredSupervisorNames.toSet().toList();
-            supervisorOptions.add('No Supervisor');
+            supervisorOptions.insert(0, 'No Supervisor');
           });
         } else {
           setState(() {
@@ -125,7 +134,8 @@ class EditStudentTab extends State<EditStudent> {
         companyOptions = querySnapshot.docs
             .map((doc) => doc.data()['companyName'] as String)
             .toList();
-        companyOptions.add('No Working Company');
+        companyOptions.insert(0, 'No Working Company');
+
       });
     } catch (e) {
       debugPrint("Error fetching companies: $e");
@@ -134,16 +144,129 @@ class EditStudentTab extends State<EditStudent> {
 
   // Mapping of departments to their programs
   final Map<String, List<String>> departmentProgramMap = {
-    'Engineering': ['Mechanical', 'Civil', 'Electrical'],
-    'IT': ['Computer Science', 'Information Technology'],
-    'Business': ['Management', 'Accounting'],
-    'Marketing': ['Digital Marketing', 'Brand Management'],
+    'Engineering': [
+      'Mechanical Engineering',
+      'Civil Engineering',
+      'Electrical Engineering',
+      'Aerospace Engineering',
+      'Mechatronics Engineering',
+      'Biomedical Engineering',
+      'Chemical Engineering',
+    ],
+    'IT': [
+      'Computer Science',
+      'Information Technology',
+      'Cybersecurity',
+      'Data Science',
+      'Game Development',
+    ],
+    'Business': [
+      'Business Administration',
+      'Finance & Banking',
+      'Accounting',
+      'Human Resource Management',
+      'Supply Chain Management',
+    ],
+    'Marketing': [
+      'Digital Marketing',
+      'Brand Management',
+      'Market Research',
+      'Advertising & Media',
+    ],
+    'Science': [
+      'Mathematics',
+      'Physics',
+      'Chemistry',
+      'Biotechnology',
+      'Environmental Science',
+    ],
+    'Health & Medical': [
+      'Medicine',
+      'Nursing',
+      'Pharmacy',
+      'Physiotherapy',
+      'Dentistry',
+      'Biomedical Science',
+    ],
+    'Arts & Design': [
+      'Graphic Design',
+      'Multimedia & Animation',
+      'Film & Television Production',
+      'Fine Arts',
+      'Interior Design',
+    ],
+    'Social Sciences': [
+      'Psychology',
+      'Sociology',
+      'Political Science',
+      'International Relations',
+      'Law',
+      'Communication & Media Studies',
+    ],
+    'Education': [
+      'Early Childhood Education',
+      'Primary Education',
+      'Secondary Education',
+      'TESOL',
+    ],
   };
 
   final Map<String, List<String>> programSpecializationMap = {
-    'Computer Science': ['AI', 'Cyber Security'],
-    'Information Technology': ['Business Software Development', 'Software Engineering'],
-    'Management': ['Project Management', 'HR Management'],
+    'Mechanical Engineering': ['Automotive Engineering', 'Robotics', 'Thermodynamics'],
+    'Civil Engineering': ['Structural Engineering', 'Geotechnical Engineering', 'Construction Management'],
+    'Electrical Engineering': ['Power Systems', 'Control Engineering', 'Signal Processing'],
+    'Aerospace Engineering': ['Aerodynamics', 'Space Systems', 'Propulsion'],
+    'Mechatronics Engineering': ['Automation', 'Embedded Systems', 'Robotics'],
+    'Biomedical Engineering': ['Medical Imaging', 'Biomechanics', 'Neuroengineering'],
+    'Chemical Engineering': ['Process Engineering', 'Polymer Science', 'Biochemical Engineering'],
+
+    'Computer Science': ['Artificial Intelligence', 'Cybersecurity', 'Cloud Computing'],
+    'Information Technology': ['Business Software Development', 'Network Security', 'Software Engineering'],
+    'Cybersecurity': ['Ethical Hacking', 'Forensic Computing', 'Network Security', 'Cryptography'],
+    'Data Science': ['Machine Learning', 'Big Data Analytics', 'Data Visualization', 'Natural Language Processing'],
+    'Game Development': ['Game AI', '3D Modeling & Animation', 'Game Physics', 'VR & AR Development'],
+
+    'Business Administration': ['Entrepreneurship', 'Strategic Management', 'Corporate Leadership'],
+    'Finance & Banking': ['Investment Banking', 'Financial Risk Management', 'Wealth Management', 'Corporate Finance'],
+    'Accounting': ['Tax Accounting', 'Auditing', 'Forensic Accounting', 'Financial Accounting'],
+    'Human Resource Management': ['Employee Relations', 'Talent Management', 'Compensation & Benefits'],
+    'Supply Chain Management': ['Logistics', 'Operations Management', 'Procurement'],
+
+    'Digital Marketing': ['SEO & SEM', 'Content Marketing', 'Social Media Marketing'],
+    'Brand Management': ['Luxury Brand Management', 'Consumer Behavior', 'Product Branding'],
+    'Market Research': ['Data Analytics', 'Consumer Insights', 'Competitive Analysis'],
+    'Advertising & Media': ['Creative Advertising', 'Public Relations', 'Media Planning'],
+
+    'Mathematics': ['Applied Mathematics', 'Statistics', 'Computational Mathematics'],
+    'Physics': ['Quantum Mechanics', 'Astrophysics', 'Electromagnetism'],
+    'Chemistry': ['Organic Chemistry', 'Inorganic Chemistry', 'Physical Chemistry'],
+    'Biotechnology': ['Genetics', 'Bioinformatics', 'Industrial Biotechnology'],
+    'Environmental Science': ['Climate Science', 'Environmental Policy', 'Sustainability Studies'],
+
+    'Medicine': ['General Practice', 'Cardiology', 'Neurology', 'Pediatrics'],
+    'Nursing': ['Critical Care Nursing', 'Geriatric Nursing', 'Pediatric Nursing'],
+    'Pharmacy': ['Pharmaceutical Chemistry', 'Clinical Pharmacy', 'Pharmacology'],
+    'Physiotherapy': ['Sports Physiotherapy', 'Rehabilitation Therapy', 'Neurological Physiotherapy'],
+    'Dentistry': ['Orthodontics', 'Periodontology', 'Prosthodontics'],
+    'Biomedical Science': ['Medical Microbiology', 'Immunology', 'Molecular Biology'],
+
+    'Graphic Design': ['UI/UX Design', 'Typography', 'Illustration'],
+    'Multimedia & Animation': ['3D Animation', 'Motion Graphics', 'Game Art'],
+    'Film & Television Production': ['Cinematography', 'Screenwriting', 'Film Editing'],
+    'Fine Arts': ['Sculpture', 'Painting', 'Printmaking'],
+    'Interior Design': ['Residential Design', 'Commercial Interior', 'Sustainable Design'],
+
+    'Psychology': ['Clinical Psychology', 'Counseling Psychology', 'Industrial-Organizational Psychology', 'Forensic Psychology'],
+    'Sociology': ['Cultural Sociology', 'Urban Sociology', 'Political Sociology'],
+    'Political Science': ['Public Policy', 'International Relations', 'Comparative Politics'],
+    'International Relations': ['Diplomacy', 'Global Security', 'Human Rights'],
+    'Law': ['Criminal Law', 'Corporate Law', 'International Law'],
+    'Communication & Media Studies': ['Journalism', 'Broadcasting', 'Public Relations'],
+
+    'Early Childhood Education': ['Montessori Education', 'Child Psychology', 'Curriculum Development'],
+    'Primary Education': ['STEM Education', 'Special Education', 'Language Learning'],
+    'Secondary Education': ['Mathematics Education', 'Science Education', 'Social Studies Education'],
+    'TESOL': ['Applied Linguistics', 'Second Language Acquisition', 'English for Specific Purposes'],
   };
 
   Future<void> fetchStudentDetails() async {
@@ -173,6 +296,7 @@ class EditStudentTab extends State<EditStudent> {
             studentIntakePeriod = studentDoc['intakePeriod'] ?? 'No intake period';
             companyID = studentDoc['companyID'] ?? 'No working company';
             supervisorID = studentDoc['supervisorID'] ?? 'No supervisor';
+            skill = List<String>.from(studentDoc['skill'] ?? []);
           } else {
             studentID = 'No Student ID';
             studentDept = 'No department';
@@ -534,7 +658,7 @@ class EditStudentTab extends State<EditStudent> {
                                     ),
                                     prefixIcon: const Icon(Icons.date_range),
                                   ),
-                                  items: <String>['Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'] 
+                                  items: intakes 
                                       .map<DropdownMenuItem<String>>((String value) {
                                     return DropdownMenuItem<String>(
                                       value: value,
@@ -684,6 +808,7 @@ class EditStudentTab extends State<EditStudent> {
                                                 'intakePeriod': studentIntakePeriod,
                                                 'companyID': companyId,
                                                 'supervisorID': supervisorId,
+                                                'skill': skill,
                                               };
 
                                               await FirebaseFirestore.instance
@@ -701,7 +826,8 @@ class EditStudentTab extends State<EditStudent> {
                                               }
 
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
-                                              Navigator.pop(context, true);
+                                              widget.refreshCallback();
+                                              Navigator.of(context).pop(true);
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile')));
                                               debugPrint("Error updating profile: $e");

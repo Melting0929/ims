@@ -30,6 +30,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
   String studentProgram = '';
   String studentSpecialization = '';
   String studentIntakePeriod = '';
+  List<String> skill = [];
 
   String? companyID;
   String? supervisorID;
@@ -50,6 +51,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
   final TextEditingController studentIntakePeriodController = TextEditingController();
   final TextEditingController companyNameController = TextEditingController();
   final TextEditingController supervisorNameController = TextEditingController();
+  final TextEditingController skillController = TextEditingController();
 
   RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
@@ -59,54 +61,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
   void initState() {
     super.initState();
     fetchStudentDetails();
-    fetchSupervisorList();
-    fetchCompanyList();
   }
-
-  Future<void> fetchSupervisorList() async {
-    try {
-      var querySnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('userType', isEqualTo: 'Supervisor')
-          .get();
-      setState(() {
-        supervisorOptions = querySnapshot.docs
-            .map((doc) => doc.data()['name'] as String)
-            .toList();
-      });
-    } catch (e) {
-      debugPrint("Error fetching supervisors: $e");
-    }
-  }
-
-  Future<void> fetchCompanyList() async {
-    try {
-      var querySnapshot = await FirebaseFirestore.instance
-          .collection('Company')
-          .get();
-      setState(() {
-        companyOptions = querySnapshot.docs
-            .map((doc) => doc.data()['companyName'] as String)
-            .toList();
-      });
-    } catch (e) {
-      debugPrint("Error fetching companies: $e");
-    }
-  }
-
-  // Mapping of departments to their programs
-  final Map<String, List<String>> departmentProgramMap = {
-    'Engineering': ['Mechanical', 'Civil', 'Electrical'],
-    'IT': ['Computer Science', 'Information Technology'],
-    'Business': ['Management', 'Accounting'],
-    'Marketing': ['Digital Marketing', 'Brand Management'],
-  };
-
-  final Map<String, List<String>> programSpecializationMap = {
-    'Computer Science': ['AI', 'Cyber Security'],
-    'Information Technology': ['Business Software Development', 'Software Engineering'],
-    'Management': ['Project Management', 'HR Management'],
-  };
 
   Future<void> fetchStudentDetails() async {
     try {
@@ -135,15 +90,8 @@ class EprofileStudentTab extends State<EprofileStudent> {
             studentIntakePeriod = studentDoc['intakePeriod'] ?? 'No intake period';
             companyID = studentDoc['companyID'] ?? 'No working company';
             supervisorID = studentDoc['supervisorID'] ?? 'No supervisor';
-          } else {
-            studentID = 'No Student ID';
-            studentDept = 'No department';
-            studentProgram = 'No Program';
-            studentSpecialization = 'No specialization';
-            studentIntakePeriod = 'No intake period';
-            companyID = null;
-            supervisorID = null;
-          }
+            skill = List<String>.from(studentDoc['skill'] ?? []);
+          } 
         });
 
         // Fetch company name
@@ -197,16 +145,6 @@ class EprofileStudentTab extends State<EprofileStudent> {
           studentIntakePeriodController.text = studentIntakePeriod;
           supervisorNameController.text = supervisorName.isNotEmpty ? supervisorName : 'No Supervisor Assigned';
           companyNameController.text = companyName.isNotEmpty ? companyName : 'No Working Company';
-
-          // Update dropdown options and selections
-          selectedDept = studentDept;
-          programOptions = departmentProgramMap[selectedDept!] ?? [];
-          if (programOptions.contains(studentProgram)) {
-            selectedProgram = studentProgram;
-          } else {
-            selectedProgram = null;
-          }
-          specializationOptions = programSpecializationMap[selectedProgram ?? ''] ?? [];
         });
       }
     } catch (e) {
@@ -377,86 +315,55 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 ),
                                 const SizedBox(height: 16),
                                 // Dept Field
-                                DropdownButtonFormField<String>(
-                                  value: studentDept.isEmpty ? null : studentDept,
+                                TextFormField(
+                                  controller: studentDeptController,
                                   decoration: InputDecoration(
                                     labelText: "Department",
-                                    hintText: "Select the department",
+                                    hintText: "Enter the department",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     prefixIcon: const Icon(Icons.business),
                                   ),
-                                  items: departmentProgramMap.keys
-                                      .map<DropdownMenuItem<String>>((String key) {
-                                    return DropdownMenuItem<String>(
-                                      value: key,
-                                      child: Text(key),
-                                    );
-                                  }).toList(),
-                                  onChanged: null,
                                 ),
                                 const SizedBox(height: 16),
                                 // Program Field
-                                DropdownButtonFormField<String>(
-                                  value: programOptions.contains(studentProgram) ? studentProgram : null,
+                                TextFormField(
+                                  controller: studentProgramController,
                                   decoration: InputDecoration(
                                     labelText: "Program",
-                                    hintText: "Select the program",
+                                    hintText: "Enter the Program",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     prefixIcon: const Icon(Icons.school),
                                   ),
-                                  items: programOptions.map<DropdownMenuItem<String>>((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: null,
                                 ),
                                 const SizedBox(height: 16),
                                 // Specialization Field
-                                DropdownButtonFormField<String>(
-                                  value: studentSpecialization.isEmpty ? null : studentSpecialization,
+                                TextFormField(
+                                  controller: studentSpecializationController,
                                   decoration: InputDecoration(
                                     labelText: "Specialization",
-                                    hintText: "Select the specialization",
+                                    hintText: "Enter the Specialization",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     prefixIcon: const Icon(Icons.science),
                                   ),
-                                  items: specializationOptions
-                                      .map<DropdownMenuItem<String>>((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: null,
                                 ),
                                 const SizedBox(height: 16),
                                 // Intake Period Field
-                                DropdownButtonFormField<String>(
-                                  value: studentIntakePeriod.isEmpty ? null : studentIntakePeriod,
+                                TextFormField(
+                                  controller: studentIntakePeriodController,
                                   decoration: InputDecoration(
                                     labelText: "Intake Period",
-                                    hintText: "Select the intake period",
+                                    hintText: "Enter the intake period",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     prefixIcon: const Icon(Icons.date_range),
                                   ),
-                                  items: <String>['Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'] 
-                                      .map<DropdownMenuItem<String>>((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: null,
                                 ),
                                 const SizedBox(height: 32),
                                 // Supervisor Name Field
@@ -485,6 +392,56 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
+                                const Text(
+                                  "Assign Skill",
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  children: skill
+                                    .map((tag) => Chip(
+                                        label: Text(tag),
+                                        onDeleted: () {
+                                          setState(() {
+                                            skill.remove(tag);
+                                          });
+                                        },
+                                      ))
+                                  .toList(),
+                                ),
+                                if (skill.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    "Please add at least one skill.",
+                                    style: TextStyle(color: Colors.red, fontSize: 14),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: skillController,
+                                  decoration: InputDecoration(
+                                    labelText: "Add Skill",
+                                    hintText: "Enter a skill and press Add",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    prefixIcon: const Icon(Icons.tag),
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.add),
+                                      onPressed: () {
+                                      if (skillController.text.trim().isNotEmpty) {
+                                          setState(() {
+                                            skill.add(skillController.text.trim());
+                                            skillController.clear();
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                                 // Save Button
                                 Center(
                                   child: Row(
@@ -493,6 +450,16 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                       ElevatedButton(
                                         onPressed: () async {
                                           if (formKey.currentState?.validate() ?? false) {
+                                            if (skill.isEmpty) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Please add at least one skill before saving.'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                              return;
+                                            }
+
                                             // Get values from form fields
                                             String updatedName = studentNameController.text;
                                             String updatedEmail = studentEmailController.text;
@@ -553,6 +520,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                                 'intakePeriod': studentIntakePeriod,
                                                 'supervisorID': supervisorId,
                                                 'companyID': companyId,
+                                                'skill': skill,
                                               };
 
                                               await FirebaseFirestore.instance

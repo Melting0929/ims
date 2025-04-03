@@ -9,7 +9,8 @@ import 'color.dart';
 
 class AddExternal extends StatefulWidget {
   final String userId;
-  const AddExternal({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const AddExternal({super.key, required this.userId, required this.refreshCallback});
 
   @override
   State<AddExternal> createState() => _AddExternalState();
@@ -176,7 +177,8 @@ class _AddExternalState extends State<AddExternal> {
           const SnackBar(content: Text('Application saved successfully'), backgroundColor: Colors.green),
         );
 
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error adding external: $e')),

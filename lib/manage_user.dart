@@ -21,6 +21,7 @@ import 'add_company.dart';
 import 'add_student.dart';
 import 'add_supervisor.dart';
 
+// OfferLetter replace  Resume (Student)
 class ManageUser extends StatefulWidget {
   final String userId;
   const ManageUser({super.key, required this.userId});
@@ -38,6 +39,14 @@ class ManageUserTab extends State<ManageUser> {
   final Color rowEvenColor = Colors.grey.shade100;
   final Color rowOddColor = Colors.white;
 
+  List<String> depts = ['All', 'Engineering','IT','Business','Marketing','Science','Health & Medical','Arts & Design','Social Sciences','Education'];
+  List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
+                          'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
+                          'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
+                          'Jan-Apr 2024', 'May-Aug 2024', 'Sept-Dec 2024', 
+                          'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025']
+                        ;
+
   List<Map<String, dynamic>> adminData = [];
   List<Map<String, dynamic>> supervisorData = [];
   List<Map<String, dynamic>> studentData = [];
@@ -49,6 +58,7 @@ class ManageUserTab extends State<ManageUser> {
   String selectedCompanyName = 'All';
 
   String selectedCompany = 'All';
+  String selectedCompanyType = 'All';
   String selectedApprovalStatus = 'All';
 
   String selectedSupervisor = 'All';
@@ -83,7 +93,6 @@ void initState() {
 }
 
   Future<void> _refreshData() async {
-
     List<Map<String, dynamic>> fetchAdminData = await _getAdminData();
     List<Map<String, dynamic>> fetchStudentData = await _getStudentData();
     List<Map<String, dynamic>> fetchSupervisorData = await _getSupervisorData();
@@ -94,6 +103,21 @@ void initState() {
       studentData = fetchStudentData;
       supervisorData = fetchSupervisorData;
       companyData = fetchCompanyData;
+    });
+    fetchSupervisorList().then((supervisor) {
+      setState(() {
+        supervisorNames = supervisor;
+      });
+    });
+    fetchAdminList().then((admin) {
+      setState(() {
+        adminNames = admin;
+      });
+    });
+    fetchCompanyNames().then((company) {
+      setState(() {
+        companyNames = company;
+      });
     });
   }
 
@@ -250,98 +274,98 @@ void initState() {
   }
 
   Future<List<Map<String, dynamic>>> _getStudentData() async {
-  try {
-    QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
-        .collection('Student')
-        .get();
-
-    List<Map<String, dynamic>> students = studentSnapshot.docs.map((doc) {
-      return doc.data() as Map<String, dynamic>;
-    }).toList();
-
-    List<Map<String, dynamic>> userStudent = [];
-
-    for (var student in students) {
-      var userID = student['userID'];
-      var userSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userID)
+    try {
+      QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
+          .collection('Student')
           .get();
-      var user = userSnapshot.data() as Map<String, dynamic>;
 
-      var supervisorID = student['supervisorID'];
-      var companyID = student['companyID'];
+      List<Map<String, dynamic>> students = studentSnapshot.docs.map((doc) {
+        return doc.data() as Map<String, dynamic>;
+      }).toList();
 
-      String companyName = 'No Working Company';
-      String supervisorName = 'No Supervisor';
+      List<Map<String, dynamic>> userStudent = [];
 
-      // Retrieve company name if companyID is not null or empty
-      if (companyID != null && companyID.isNotEmpty) {
-        DocumentSnapshot companySnapshot = await FirebaseFirestore.instance
-            .collection('Company')
-            .doc(companyID)
+      for (var student in students) {
+        var userID = student['userID'];
+        var userSnapshot = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userID)
             .get();
-        Map<String, dynamic> company = companySnapshot.exists
-            ? companySnapshot.data() as Map<String, dynamic>
-            : {};
-        companyName = company['companyName'] ?? 'No Working Company';
-      }
+        var user = userSnapshot.data() as Map<String, dynamic>;
 
-      // Retrieve supervisor name if supervisorID is not null or empty
-      if (supervisorID != null && supervisorID.isNotEmpty) {
-        DocumentSnapshot supervisorSnapshot = await FirebaseFirestore.instance
-            .collection('Supervisor')
-            .doc(supervisorID)
-            .get();
-        Map<String, dynamic> supervisor = supervisorSnapshot.exists
-            ? supervisorSnapshot.data() as Map<String, dynamic>
-            : {};
+        var supervisorID = student['supervisorID'];
+        var companyID = student['companyID'];
 
-        var supervisorNID = supervisor['userID'];
-        if (supervisorNID != null && supervisorNID.isNotEmpty) {
-          DocumentSnapshot supervisorNameSnapshot =
-              await FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(supervisorNID)
-                  .get();
-          Map<String, dynamic> supervisorN = supervisorNameSnapshot.exists
-              ? supervisorNameSnapshot.data() as Map<String, dynamic>
+        String companyName = 'No Working Company';
+        String supervisorName = 'No Supervisor';
+
+        // Retrieve company name if companyID is not null or empty
+        if (companyID != null && companyID.isNotEmpty) {
+          DocumentSnapshot companySnapshot = await FirebaseFirestore.instance
+              .collection('Company')
+              .doc(companyID)
+              .get();
+          Map<String, dynamic> company = companySnapshot.exists
+              ? companySnapshot.data() as Map<String, dynamic>
               : {};
-          supervisorName = supervisorN['name'] ?? 'No Supervisor';
+          companyName = company['companyName'] ?? 'No Working Company';
+        }
+
+        // Retrieve supervisor name if supervisorID is not null or empty
+        if (supervisorID != null && supervisorID.isNotEmpty) {
+          DocumentSnapshot supervisorSnapshot = await FirebaseFirestore.instance
+              .collection('Supervisor')
+              .doc(supervisorID)
+              .get();
+          Map<String, dynamic> supervisor = supervisorSnapshot.exists
+              ? supervisorSnapshot.data() as Map<String, dynamic>
+              : {};
+
+          var supervisorNID = supervisor['userID'];
+          if (supervisorNID != null && supervisorNID.isNotEmpty) {
+            DocumentSnapshot supervisorNameSnapshot =
+                await FirebaseFirestore.instance
+                    .collection('Users')
+                    .doc(supervisorNID)
+                    .get();
+            Map<String, dynamic> supervisorN = supervisorNameSnapshot.exists
+                ? supervisorNameSnapshot.data() as Map<String, dynamic>
+                : {};
+            supervisorName = supervisorN['name'] ?? 'No Supervisor';
+          }
+        }
+
+        Map<String, dynamic> studentData = {
+          'userID': student['userID'] ?? '',
+          'userType': user['userType'] ?? '',
+          'studID': student['studID'] ?? '',
+          'name': user['name'] ?? '',
+          'email': user['email'] ?? '',
+          'contactNo': user['contactNo'] ?? '',
+          'password': user['password'] ?? '',
+          'dept': student['dept'] ?? '',
+          'resumeURL': student['resumeURL'] ?? '',
+          'specialization': student['specialization'] ?? '',
+          'studProgram': student['studProgram'] ?? '',
+          'companyName': companyName,
+          'supervisorName': supervisorName,
+          'intakePeriod': student['intakePeriod'] ?? '',
+        };
+
+        if ((selectedDept == 'All' || studentData['dept'] == selectedDept) &&
+            (selectedCompanyName == 'All' || studentData['companyName'] == selectedCompanyName || (studentData['companyName'] == null && selectedCompanyName == 'No Working Company')) &&
+            (selectedIntakePeriod == 'All' || studentData['intakePeriod'] == selectedIntakePeriod) &&
+            (selectedSupervisorName == 'All' || studentData['supervisorName'] == selectedSupervisorName || (studentData['supervisorName'] == null && selectedSupervisorName == 'No Supervisor'))) {
+          userStudent.add(studentData);
         }
       }
 
-      Map<String, dynamic> studentData = {
-        'userID': student['userID'] ?? '',
-        'userType': user['userType'] ?? '',
-        'studID': student['studID'] ?? '',
-        'name': user['name'] ?? '',
-        'email': user['email'] ?? '',
-        'contactNo': user['contactNo'] ?? '',
-        'password': user['password'] ?? '',
-        'dept': student['dept'] ?? '',
-        'resumeURL': student['resumeURL'] ?? '',
-        'specialization': student['specialization'] ?? '',
-        'studProgram': student['studProgram'] ?? '',
-        'companyName': companyName,
-        'supervisorName': supervisorName,
-        'intakePeriod': student['intakePeriod'] ?? '',
-      };
-
-      if ((selectedDept == 'All' || studentData['dept'] == selectedDept) &&
-          (selectedCompanyName == 'All' || studentData['companyName'] == selectedCompanyName || (studentData['companyName'] == null && selectedCompanyName == 'No Working Company')) &&
-          (selectedIntakePeriod == 'All' || studentData['intakePeriod'] == selectedIntakePeriod) &&
-          (selectedSupervisorName == 'All' || studentData['supervisorName'] == selectedSupervisorName || (studentData['supervisorName'] == null && selectedSupervisorName == 'No Supervisor'))) {
-        userStudent.add(studentData);
-      }
+      return userStudent;
+    } catch (e) {
+      print('Error retrieving student data: $e');
+      return [];
     }
-
-    return userStudent;
-  } catch (e) {
-    print('Error retrieving student data: $e');
-    return [];
   }
-}
 
   Future<List<Map<String, dynamic>>> _getCompanyData() async {
     try {
@@ -376,17 +400,18 @@ void initState() {
           'companyIndustry': company['companyIndustry'] ?? '',
           'companyEmpNo': company['companyEmpNo'] ?? '',
           'companyEmail': company['companyEmail'] ?? '',
+          'companyType': company['companyType'] ?? '',
           'logoURL': company['logoURL'] ?? '',
           'pContactJobTitle': company['pContactJobTitle'] ?? '',
           'approvalStatus': company['approvalStatus'] ?? '',
         };
 
         if ((selectedApprovalStatus == 'All' || companyData['approvalStatus'] == selectedApprovalStatus) &&
-            (selectedCompany == 'All' || companyData['companyName'] == selectedCompany)) {
+            (selectedCompany == 'All' || companyData['companyName'] == selectedCompany) &&
+            (selectedCompanyType == 'All' || companyData['companyType'] == selectedCompanyType)) {
           retrieveCompanyData.add(companyData);
         }
       }
-
       return retrieveCompanyData;
     } catch (e) {
       print('Error retrieving company data: $e');
@@ -482,9 +507,8 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns:  const [
@@ -502,7 +526,7 @@ void initState() {
         DataColumn(label: Text('Resume', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: StudentData(data, context, rowEvenColor, rowOddColor),
+      source: StudentData(data, context, rowEvenColor, rowOddColor, _refreshData),
     );
   }
 
@@ -522,30 +546,25 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
         DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job Title', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Password', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company Name', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Address', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company\nRegistration\nNo', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Established\nYear', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Description', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Reg No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Industry', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Employee\nCount', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Type', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Logo', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Approval\nStatus', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: CompanyData(data, context, rowEvenColor, rowOddColor),
+      source: CompanyData(data, context, rowEvenColor, rowOddColor, _refreshData),
     );
   }
 
@@ -565,9 +584,8 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns:  const [
@@ -579,7 +597,7 @@ void initState() {
         DataColumn(label: Text('Department', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: SupervisorData(data, context, rowEvenColor, rowOddColor), 
+      source: SupervisorData(data, context, rowEvenColor, rowOddColor, _refreshData), 
     );
   }
 
@@ -599,13 +617,11 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
       
       columns: const [
-        DataColumn(label: Text('ID', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
@@ -757,39 +773,49 @@ void initState() {
     );
   }
 
-
-  void _navigateToAddUser(BuildContext context, String userType) {
-    if (userType == 'Student'){
-      Navigator.push(
+  Future<void> _navigateToAddUser(BuildContext context, String userType) async {
+    if (userType == 'Student') {
+      final result = await  Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AddStudentPage(userType: userType),
+          builder: (context) => AddStudentPage(userType: userType, refreshCallback: _refreshData),
         ),
       );
+      if (result == true) {
+        _refreshData(); // Refresh data when returning
+      }
     } else if (userType == 'Supervisor') {
-      Navigator.push(
+      final result = await  Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AddSupervisorPage(userType: userType),
+          builder: (context) => AddSupervisorPage(userType: userType, refreshCallback: _refreshData),
         ),
       );
+      if (result == true) {
+        _refreshData(); // Refresh data when returning
+      }
     } else if (userType == 'Company') {
-      Navigator.push(
+      final result = await  Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AddCompanyPage(userType: userType),
+          builder: (context) => AddCompanyPage(userType: userType, refreshCallback: _refreshData),
         ),
       );
+      if (result == true) {
+        _refreshData(); // Refresh data when returning
+      }
     } else {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AddAdminPage(userType: userType),
+          builder: (context) => AddAdminPage(userType: userType, refreshCallback: _refreshData),
         ),
       );
+      if (result == true) {
+        _refreshData(); // Refresh data when returning
+      }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -980,7 +1006,7 @@ void initState() {
                             icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                             dropdownColor: Colors.white,
                             style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ['All','Engineering','IT','Business','Marketing'].map((dept) {
+                            items: depts.map((dept) {
                               return DropdownMenuItem<String>(
                                 value: dept,
                                 child: Text(dept),
@@ -1049,7 +1075,14 @@ void initState() {
                             items: ['No Working Company', ...companyNames].map((name) {
                               return DropdownMenuItem<String>(
                                 value: name,
-                                child: Text(name),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),
@@ -1074,7 +1107,7 @@ void initState() {
                             icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                             dropdownColor: Colors.white,
                             style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ['All', 'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'].map((intake) {
+                            items: intakes.map((intake) {
                               return DropdownMenuItem(
                                 value: intake,
                                 child: Text(intake),
@@ -1123,9 +1156,49 @@ void initState() {
                             items: companyNames.map((name) {
                               return DropdownMenuItem<String>(
                                 value: name,
-                                child: Text(name),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      const Text(
+                        "Company Type:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedCompanyType,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: ["All", "Registered", "External"].map((type) {
+                              return DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedCompanyType = newValue!;
+                              });
+                            },
                           ),
                         ),
                       ),
@@ -1227,7 +1300,7 @@ void initState() {
                             icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                             dropdownColor: Colors.white,
                             style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ['All','Engineering','IT','Business','Marketing'].map((dept) {
+                            items: depts.map((dept) {
                               return DropdownMenuItem<String>(
                                 value: dept,
                                 child: Text(dept),
@@ -1294,8 +1367,9 @@ class StudentData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  StudentData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  StudentData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -1325,13 +1399,16 @@ class StudentData extends DataTableSource {
           children: [
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blue),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EditStudent(userId: item['userID']),
-                  ),
-                );
+                    builder: (context) => EditStudent(userId: item['userID'], refreshCallback: refreshCallback,),
+                    ),
+                  );
+                  if (result == true) {
+                    refreshCallback(); // Refresh data when returning from the update page
+                  }
               },
             ),
             IconButton(
@@ -1389,8 +1466,9 @@ class CompanyData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  CompanyData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  CompanyData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -1404,17 +1482,13 @@ class CompanyData extends DataTableSource {
       ),
       cells: [
         DataCell(Text(item['name'] ?? '')),
-        DataCell(Text(item['pContactJobTitle'] ?? '')),
         DataCell(Text(item['contactNo'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['password'] ?? '')),
         DataCell(Text(item['companyName'] ?? '')),
-        DataCell(Text(item['companyAddress'] ?? '')),
         DataCell(Text(item['companyRegNo'] ?? '')),
-        DataCell(Text(item['companyYear'].toString())),
-        DataCell(Text(item['companyDesc'] ?? '')),
         DataCell(Text(item['companyIndustry'] ?? '')),
-        DataCell(Text(item['companyEmpNo'].toString())),
+        DataCell(Text(item['companyType'] ?? '')),
         DataCell(Text(item['companyEmail'] ?? '')),
         
         DataCell(
@@ -1446,13 +1520,16 @@ class CompanyData extends DataTableSource {
             children: [
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditCompany(userId: item['userID']),
+                      builder: (context) => EditCompany(userId: item['userID'], refreshCallback: refreshCallback,),
                     ),
                   );
+                  if (result == true) {
+                    refreshCallback(); // Refresh data when returning from the update page
+                  }
                 },
               ),
               IconButton(
@@ -1508,8 +1585,9 @@ class SupervisorData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  SupervisorData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  SupervisorData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -1533,13 +1611,16 @@ class SupervisorData extends DataTableSource {
             children: [
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditSupervisor(userId: item['userID']),
+                      builder: (context) => EditSupervisor(userId: item['userID'], refreshCallback: refreshCallback,),
                     ),
                   );
+                  if (result == true) {
+                    refreshCallback(); // Refresh data when returning from the update page
+                  }
                 },
               ),
               IconButton(
@@ -1609,7 +1690,6 @@ class AdminData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['userID'] ?? '')),
         DataCell(Text(item['name'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['contactNo'] ?? '')),

@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddAssessment extends StatefulWidget {
   final String userId;
-  const AddAssessment({super.key, required this.userId});
+  final VoidCallback refreshCallback;
+  const AddAssessment({super.key, required this.userId, required this.refreshCallback});
 
   @override
   State<AddAssessment> createState() => _AddAssessmentState();
@@ -165,7 +166,8 @@ class _AddAssessmentState extends State<AddAssessment> {
           const SnackBar(content: Text('Assessment added successfully!')),
         );
 
-        Navigator.pop(context);
+        widget.refreshCallback();
+        Navigator.of(context).pop(true);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving data: $e')),
