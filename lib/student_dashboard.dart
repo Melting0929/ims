@@ -7,9 +7,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'download_guideline.dart';
 import 'manage_external.dart';
 import 'internship_recommend.dart';
+import 'assessment.dart';
 import 'login_web.dart';
+import 'login_mobile.dart';
 import 'eprofile_student.dart';
 import 'color.dart';
+import 'package:intl/intl.dart';
 
 // Upload Resume & Delete Resume File Name
 class StudentDashboard extends StatefulWidget {
@@ -42,6 +45,10 @@ class StudentDashboardState extends State<StudentDashboard> {
     fetchStudentDetails().then((_) {
       fetchApplications();
     });
+  }
+
+  bool isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600;
   }
 
   Future<void> fetchStudentDetails() async {
@@ -134,7 +141,9 @@ class StudentDashboardState extends State<StudentDashboard> {
           'jobTitle': jobData['jobTitle'] ?? 'Unknown',
           'companyID': companyID,
           'companyName': companyData['companyName'] ?? 'Unknown',
-          'dateApplied': data['dateApplied'] ?? 'No Date',
+          'dateApplied': data['dateApplied'] != null
+            ? DateFormat('dd MMM yyyy').format((data['dateApplied'] as Timestamp).toDate())
+            : 'No Date',
         });
       }));
   
@@ -179,10 +188,20 @@ class StudentDashboardState extends State<StudentDashboard> {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginWeb()),
-      );
+
+      // Redirect based on platform
+      if (isMobile(context)) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginTab()),
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginWeb()),
+          (Route<dynamic> route) => false, // removes all previous routes
+        );
+      }
     }
   }
 
@@ -369,6 +388,7 @@ class StudentDashboardState extends State<StudentDashboard> {
                 fontStyle: FontStyle.italic,
                 color: Colors.blue,
                 decoration: TextDecoration.underline,
+                decorationColor: Colors.blue,
               ),
             ),
           )
@@ -380,145 +400,161 @@ class StudentDashboardState extends State<StudentDashboard> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const  Text("Student Dashboard"),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          studentName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          studentEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => EprofileStudent(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Internship Recommendation Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Apply External Company Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Download Document Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-            // Footer Text
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Student Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
-              ),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
         ),
       ),
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Padding(
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Dashboard"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            studentName,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            studentEmail,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EprofileStudent(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Internship Recommendation Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Assessment Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => Assessment(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Apply External Company Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Download Document Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Footer Text
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Student Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: SingleChildScrollView( 
+          child: Padding(
             padding: const EdgeInsets.only(left: 30.0, top: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,7 +584,7 @@ class StudentDashboardState extends State<StudentDashboard> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                const Divider(height: 1, thickness: 1, color: Color.fromARGB(255, 204, 201, 201)),
+                const Divider(height: 1, thickness: 1, color: Colors.black),
 
                 // Upload Resume Row
                 Padding(
@@ -598,10 +634,86 @@ class StudentDashboardState extends State<StudentDashboard> {
                         "Application History:",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 20),
                       applications.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : SingleChildScrollView(
+                        ? const Center(
+                            child: Text(
+                              "No Application Yet...",
+                              style: TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                          )
+                        : isMobile(context)
+                            ? ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: applications.length,
+                                itemBuilder: (context, index) {
+                                  final app = applications[index];
+                                  return Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    elevation: 3,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    child: ListTile(
+                                      title: Text(app['jobTitle'] ?? 'Unknown Job'),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text("Company: ${app['companyName'] ?? 'Unknown'}"),
+                                            Text("Status: ${app['applicationStatus'] ?? 'Pending'}"),
+                                            Text("Interview: ${app['interviewStatus'] ?? 'N/A'}"),
+                                            Text("Applied: ${app['dateApplied'] ?? '-'}"),
+                                          ],
+                                        ),
+                                      trailing: IconButton(
+                                        icon: const Icon(Icons.cancel, color: Colors.orange),
+                                        onPressed: () async {
+                                          final applicationID = app['applicationID'] ?? '';
+
+                                          if (applicationID.isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Invalid application ID.')),
+                                            );
+                                            return;
+                                          }
+
+                                          // Show confirmation dialog
+                                          final confirm = await showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Confirm Cancellation'),
+                                              content: const Text('Are you sure you want to cancel this application?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(context).pop(false),
+                                                  child: const Text('No'),
+                                                ),
+                                                ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: AppColors.mutedBlue,
+                                                  ),
+                                                  onPressed: () => Navigator.of(context).pop(true),
+                                                  child: const Text("Yes, Cancel", style: TextStyle(color: Colors.white)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          // If confirmed, delete the application
+                                          if (confirm == true) {
+                                            await deleteApplication(context, applicationID);
+
+                                            // Remove from local list and notify listeners to update UI
+                                            setState(() {
+                                              applications.removeWhere((element) => element['applicationID'] == applicationID);
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                            : SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: SizedBox(
                                 width: 1200, 
@@ -621,7 +733,7 @@ class StudentDashboardState extends State<StudentDashboard> {
                                   source: ApplicationDataSource(applications, context, rowEvenColor, rowOddColor),
                                   dataRowMinHeight: 10,
                                   headingRowHeight: 60,
-                                  rowsPerPage: 4,
+                                  rowsPerPage: 3,
                                   headingRowColor: WidgetStateProperty.resolveWith(
                                     (states) => headingRowColor,
                                   ),
@@ -634,7 +746,7 @@ class StudentDashboardState extends State<StudentDashboard> {
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -668,47 +780,48 @@ class ApplicationDataSource extends DataTableSource {
       DataCell(
         Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.cancel, color: Colors.orange),
-              onPressed: () async {
-                final applicationID = item['applicationID'] ?? '';
+            if (item['applicationStatus'] == 'Pending')
+              IconButton(
+                icon: const Icon(Icons.cancel, color: Colors.orange),
+                onPressed: () async {
+                  final applicationID = item['applicationID'] ?? '';
 
-                if (applicationID.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invalid application ID.')),
-                  );
-                  return;
-                }
+                  if (applicationID.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invalid application ID.')),
+                    );
+                    return;
+                  }
 
-                final confirm = await showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Confirm Cancellation'),
-                    content: const Text('Are you sure you want to cancel this application?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('No'),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.mutedBlue,
+                  final confirm = await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Cancellation'),
+                      content: const Text('Are you sure you want to cancel this application?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('No'),
                         ),
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text("Yes, Cancel", style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                );
-                
-                if (confirm == true) {
-                  await deleteApplication(context, applicationID);
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.mutedBlue,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text("Yes, Cancel", style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
 
-                  applications.removeWhere((element) => element['applicationID'] == applicationID);
-                  notifyListeners();
-                }
-              },
-            ),
+                  if (confirm == true) {
+                    await deleteApplication(context, applicationID);
+
+                    applications.removeWhere((element) => element['applicationID'] == applicationID);
+                    notifyListeners();
+                  }
+                },
+              ),
           ],
         ),
       ),

@@ -7,10 +7,12 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'download_guideline.dart';
 import 'manage_external.dart';
+import 'assessment.dart';
 import 'student_dashboard.dart';
 import 'jobdetail.dart';
 import 'eprofile_student.dart';
 import 'login_web.dart';
+import 'login_mobile.dart';
 import 'color.dart';
 
 class InternshipRecommend extends StatefulWidget {
@@ -26,7 +28,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
   String resumeURL = '';
   String studentEmail = "Loading...";
   String studentName = "Loading...";
-  String selectedMenu = "Dashboard";
+  String selectedMenu = "Internship Recommendation Page";
   String extractedText = "Extracted text will appear here...";
   List<String> recommendedJobs = [];
 
@@ -36,6 +38,10 @@ class InternshipRecommendState extends State<InternshipRecommend> {
     fetchStudentDetails().then((_) {
       processResume();
     });
+  }
+
+  bool isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600;
   }
 
   Future<void> fetchStudentDetails() async {
@@ -102,10 +108,20 @@ class InternshipRecommendState extends State<InternshipRecommend> {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginWeb()),
-      );
+
+      // Redirect based on platform
+      if (isMobile(context)) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginTab()),
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginWeb()),
+          (Route<dynamic> route) => false, // removes all previous routes
+        );
+      }
     }
   }
 
@@ -181,6 +197,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
       DocumentSnapshot studentDoc = await FirebaseFirestore.instance.collection('Student').doc(studID).get();
       String? resumeURL = studentDoc["resumeURL"];
       if (resumeURL == null) {
+        localMatchJobs();
         throw Exception("Resume URL not found.");
       }
 
@@ -335,6 +352,27 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
+      // Step 4: Match jobs based on student program
+      if (studentDoc.exists) {
+        var studentData = studentDoc.data();
+        String studProgram = studentData?['dept'] ?? '';
+
+        var jobsQuery = await FirebaseFirestore.instance
+            .collection('Job')
+            .where('jobType', isEqualTo: 'Registered')
+            .get();
+
+        for (var job in jobsQuery.docs) {
+          var jobData = job.data();
+          String jobProgram = jobData['program'] ?? '';
+
+          // Check if the student's program matches the job's program
+          if (studProgram.toLowerCase() == jobProgram.toLowerCase()) {
+            matchedJobIds.add(job.id); // Add to the Set
+          }
+        }
+      }
+
       // Step 5: Update the state with unique matched jobs
       setState(() {
         recommendedJobs = matchedJobIds.toList(); // Convert Set to List
@@ -352,286 +390,307 @@ class InternshipRecommendState extends State<InternshipRecommend> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const  Text("Internship Recommendation"),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          studentName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          studentEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => EprofileStudent(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Internship Recommendation Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Apply External Company Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Download Document Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-            // Footer Text
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Student Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
-              ),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
         ),
       ),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.15),
-              child: const Text(
-                "Job Recommendations",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            studentName,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            studentEmail,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EprofileStudent(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: recommendedJobs.isEmpty
-                  ? const Center(child: Text("No job recommendations available. Kindly upload your Resume."))
-                  : ListView.builder(
-                      itemCount: recommendedJobs.length > 5 ? 5 : recommendedJobs.length,
-                      itemBuilder: (context, index) {
-                        String jobId = recommendedJobs[index];
-                        return FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance.collection('Job').doc(jobId).get(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(child: CircularProgressIndicator());
-                            }
-                            var jobData = snapshot.data!.data() as Map<String, dynamic>?;
-                            if (jobData == null) return const SizedBox();
 
-                            return Center(
-                              child: SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.55, 
-                                child: Card(
-                                  margin: const EdgeInsets.symmetric(vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          jobData['jobTitle'] ?? 'Unknown Job',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Internship Recommendation Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Assessment Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => Assessment(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Apply External Company Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageExternal(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Download Document Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Footer Text
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Student Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.15),
+                child: const Text(
+                  "Job Recommendations",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 30),
+              Expanded(
+                child: recommendedJobs.isEmpty
+                    ? const Center(child: Text("No job recommendations available. Kindly upload your Resume."))
+                    : ListView.builder(
+                        itemCount: recommendedJobs.length > 5 ? 5 : recommendedJobs.length,
+                        itemBuilder: (context, index) {
+                          String jobId = recommendedJobs[index];
+                          return FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance.collection('Job').doc(jobId).get(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+                              var jobData = snapshot.data!.data() as Map<String, dynamic>?;
+                              if (jobData == null) return const SizedBox();
+
+                              return Center(
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.55, 
+                                  child: Card(
+                                    color: Colors.white,
+                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child : Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            jobData['jobTitle'] ?? 'Unknown Job',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        FutureBuilder<QuerySnapshot>(
-                                          future: FirebaseFirestore.instance
-                                              .collection('Company')
-                                              .where('userID', isEqualTo: jobData['userID'])
-                                              .limit(1) 
-                                              .get(),
-                                          builder: (context, companySnapshot) {
-                                            if (companySnapshot.connectionState == ConnectionState.waiting) {
-                                              return const Text(
-                                                'Loading...',
-                                                style: TextStyle(fontSize: 16, color: Colors.grey),
-                                              );
-                                            }
+                                          const SizedBox(height: 5),
+                                          FutureBuilder<QuerySnapshot>(
+                                            future: FirebaseFirestore.instance
+                                                .collection('Company')
+                                                .where('userID', isEqualTo: jobData['userID'])
+                                                .limit(1) 
+                                                .get(),
+                                            builder: (context, companySnapshot) {
+                                              if (companySnapshot.connectionState == ConnectionState.waiting) {
+                                                return const Text(
+                                                  'Loading...',
+                                                  style: TextStyle(fontSize: 16, color: Colors.black),
+                                                );
+                                              }
 
-                                            if (companySnapshot.hasError) {
-                                              return const Text(
-                                                'Error fetching company',
-                                                style: TextStyle(fontSize: 16, color: Colors.red),
-                                              );
-                                            }
+                                              if (companySnapshot.hasError) {
+                                                return const Text(
+                                                  'Error fetching company',
+                                                  style: TextStyle(fontSize: 16, color: Colors.red),
+                                                );
+                                              }
 
-                                            // Debugging: Print fetched documents
-                                            print("Company Query Result: ${companySnapshot.data?.docs.length}");
-                                            print("Job userID: ${jobData['userID']}");
+                                              if (!companySnapshot.hasData || companySnapshot.data!.docs.isEmpty) {
+                                                return const Text(
+                                                  'Error: No matching company found',
+                                                  style: TextStyle(fontSize: 16, color: Colors.black),
+                                                );
+                                              }
 
+                                              var companyData = companySnapshot.data!.docs.first.data() as Map<String, dynamic>?;
+                                              print("Fetched Company Data: $companyData"); 
 
-                                            if (!companySnapshot.hasData || companySnapshot.data!.docs.isEmpty) {
-                                              return const Text(
-                                                'Error: No matching company found',
-                                                style: TextStyle(fontSize: 16, color: Colors.grey),
-                                              );
-                                            }
+                                              String companyName = companyData?['companyName'] ?? 'Unknown Company';
 
-                                            var companyData = companySnapshot.data!.docs.first.data() as Map<String, dynamic>?;
-                                            print("Fetched Company Data: $companyData"); 
-
-                                            String companyName = companyData?['companyName'] ?? 'Unknown Company';
-
-                                            return Text(
-                                              companyName,
-                                              style: const TextStyle(fontSize: 16, color: Colors.grey),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Row(
-                                          children: [
-                                            const Text(
-                                              'Skills:',
-                                              style: TextStyle(fontSize: 16, color: Colors.grey),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Expanded(
-                                              child: Text(
-                                                (jobData['tags'] is List)
-                                                    ? (jobData['tags'] as List).join(', ') // Convert list to comma-separated string
-                                                    : (jobData['tags'] ?? 'Unknown Job Tags'),
-                                                style: const TextStyle(fontSize: 16, color: Colors.grey),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(builder: (context) => JobDetail(studID: studID, jobID: jobId)),
+                                              return Text(
+                                                companyName,
+                                                style: const TextStyle(fontSize: 16, color: Colors.black),
                                               );
                                             },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.black,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            child: const Text("View Details", style: TextStyle(color: Colors.white)),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            jobData['location'] ?? 'Malaysia',
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              color: Colors.black
+                                            ),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Row(
+                                            children: [
+                                              const Text(
+                                                'Skills:',
+                                                style: TextStyle(fontSize: 14, color: Colors.blueGrey, fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Expanded(
+                                                child: Text(
+                                                  (jobData['tags'] is List)
+                                                      ? (jobData['tags'] as List).join(', ') // Convert list to comma-separated string
+                                                      : (jobData['tags'] ?? 'Unknown Job Tags'),
+                                                  style: const TextStyle(fontSize: 14, color: Colors.blueGrey),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(builder: (context) => JobDetail(studID: studID, jobID: jobId)),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.black,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              child: const Text("View Details", style: TextStyle(color: Colors.white)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-            ),
-          ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -154,14 +154,17 @@ class EprofileStudentTab extends State<EprofileStudent> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Profile Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -179,7 +182,10 @@ class EprofileStudentTab extends State<EprofileStudent> {
           Center(
             child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 80.0, vertical: 20.0),
+              padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16.0 : 80.0,
+                  vertical: isMobile ? 16.0 : 20.0,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -189,7 +195,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
-                          width: 500,
+                          width: isMobile ? double.infinity : 500,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
@@ -443,127 +449,129 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 ),
                                 const SizedBox(height: 16),
                                 // Save Button
-                                Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          if (formKey.currentState?.validate() ?? false) {
-                                            if (skill.isEmpty) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('Please add at least one skill before saving.'),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
+                                Wrap(
+                                  spacing: 16,
+                                  runSpacing: 8,
+                                  alignment: WrapAlignment.end,
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        if (formKey.currentState?.validate() ?? false) {
+                                          if (skill.isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Please add at least one skill before saving.'),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                            return;
+                                          }
 
-                                            // Get values from form fields
-                                            String updatedName = studentNameController.text;
-                                            String updatedEmail = studentEmailController.text;
-                                            String? updatedPhone = studentContactNoController.text.isEmpty ? null : studentContactNoController.text;
-                                            String updatedPassword = studentPasswordController.text;
+                                          // Get values from form fields
+                                          String updatedName = studentNameController.text;
+                                          String updatedEmail = studentEmailController.text;
+                                          String? updatedPhone = studentContactNoController.text.isEmpty ? null : studentContactNoController.text;
+                                          String updatedPassword = studentPasswordController.text;
 
-                                            // Update Firestore data
-                                            try {
-                                              // Retrieve supervisor document ID
-                                              String? supervisorId;
-                                              if (supervisorID != null) {
-                                                // Step 1: Get userID of the supervisor from Users collection
-                                                QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-                                                    .collection('Users')
-                                                    .where('name', isEqualTo: supervisorName)
-                                                    .get();
-
-                                                if (userSnapshot.docs.isNotEmpty) {
-                                                  String supervisorUserID = userSnapshot.docs.first.id;
-
-                                                  // Step 2: Get supervisor document ID from Supervisors collection using userID
-                                                  QuerySnapshot supervisorSnapshot = await FirebaseFirestore.instance
-                                                      .collection('Supervisor')
-                                                      .where('userID', isEqualTo: supervisorUserID)
-                                                      .get();
-
-                                                  if (supervisorSnapshot.docs.isNotEmpty) {
-                                                    supervisorId = supervisorSnapshot.docs.first.id;
-                                                  }
-                                                }
-                                              }
-
-                                              // Retrieve company document ID
-                                              String? companyId;
-                                              if (companyID != null) {
-                                                QuerySnapshot companySnapshot = await FirebaseFirestore.instance
-                                                    .collection('Company')
-                                                    .where('companyName', isEqualTo: companyName)
-                                                    .get();
-
-                                                if (companySnapshot.docs.isNotEmpty) {
-                                                  companyId = companySnapshot.docs.first.id;
-                                                }
-                                              }
-
-                                              var updatedUserData = {
-                                                'name': updatedName,
-                                                'email': updatedEmail,
-                                                'contactNo': updatedPhone,
-                                                'password': updatedPassword,
-                                              };
-
-                                              var updatedStudentData = {
-                                                'studID': studentID,
-                                                'dept': studentDept,
-                                                'studProgram': studentProgram,
-                                                'specialization': studentSpecialization,
-                                                'intakePeriod': studentIntakePeriod,
-                                                'supervisorID': supervisorId,
-                                                'companyID': companyId,
-                                                'skill': skill,
-                                              };
-
-                                              await FirebaseFirestore.instance
+                                          // Update Firestore data
+                                          try {
+                                            // Retrieve supervisor document ID
+                                            String? supervisorId;
+                                            if (supervisorID != null) {
+                                              // Step 1: Get userID of the supervisor from Users collection
+                                              QuerySnapshot userSnapshot = await FirebaseFirestore.instance
                                                   .collection('Users')
-                                                  .doc(widget.userId)
-                                                  .update(updatedUserData);
-                                              
-                                              QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
-                                                  .collection('Student')
-                                                  .where('userID', isEqualTo: widget.userId)
+                                                  .where('name', isEqualTo: supervisorName)
                                                   .get();
 
-                                              for (QueryDocumentSnapshot doc in studentSnapshot.docs) {
-                                                await doc.reference.update(updatedStudentData);
-                                              }
+                                              if (userSnapshot.docs.isNotEmpty) {
+                                                String supervisorUserID = userSnapshot.docs.first.id;
 
-                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
-                                              Navigator.pop(context, true);
-                                            } catch (e) {
-                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile')));
-                                              debugPrint("Error updating profile: $e");
+                                                // Step 2: Get supervisor document ID from Supervisors collection using userID
+                                                QuerySnapshot supervisorSnapshot = await FirebaseFirestore.instance
+                                                    .collection('Supervisor')
+                                                    .where('userID', isEqualTo: supervisorUserID)
+                                                    .get();
+
+                                                if (supervisorSnapshot.docs.isNotEmpty) {
+                                                  supervisorId = supervisorSnapshot.docs.first.id;
+                                                }
+                                              }
                                             }
+
+                                            // Retrieve company document ID
+                                            String? companyId;
+                                            if (companyID != null) {
+                                              QuerySnapshot companySnapshot = await FirebaseFirestore.instance
+                                                  .collection('Company')
+                                                  .where('companyName', isEqualTo: companyName)
+                                                  .get();
+
+                                              if (companySnapshot.docs.isNotEmpty) {
+                                                companyId = companySnapshot.docs.first.id;
+                                              }
+                                            }
+
+                                            var updatedUserData = {
+                                              'name': updatedName,
+                                              'email': updatedEmail,
+                                              'contactNo': updatedPhone,
+                                              'password': updatedPassword,
+                                            };
+
+                                            var updatedStudentData = {
+                                              'studID': studentID,
+                                              'dept': studentDept,
+                                              'studProgram': studentProgram,
+                                              'specialization': studentSpecialization,
+                                              'intakePeriod': studentIntakePeriod,
+                                              'supervisorID': supervisorId,
+                                              'companyID': companyId,
+                                              'skill': skill,
+                                            };
+
+                                            await FirebaseFirestore.instance
+                                                .collection('Users')
+                                                .doc(widget.userId)
+                                                .update(updatedUserData);
+                                            
+                                            QuerySnapshot studentSnapshot = await FirebaseFirestore.instance
+                                                .collection('Student')
+                                                .where('userID', isEqualTo: widget.userId)
+                                                .get();
+
+                                            for (QueryDocumentSnapshot doc in studentSnapshot.docs) {
+                                              await doc.reference.update(updatedStudentData);
+                                            }
+
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
+                                            Navigator.pop(context, true);
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile')));
+                                            debugPrint("Error updating profile: $e");
                                           }
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                                          backgroundColor: Colors.black,
-                                        ),
-                                        child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                        backgroundColor: Colors.black,
                                       ),
-                                      const SizedBox(width: 16),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(context, true);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                                          backgroundColor: Colors.redAccent,
-                                        ),
-                                        child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                                      child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        if (mounted) {
+                                          Navigator.pop(context);
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                        backgroundColor: Colors.redAccent,
                                       ),
-                                    ],
-                                  ),
+                                      child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

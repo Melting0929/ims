@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ims/color.dart';
+import 'company_detail.dart';
 
 class JobDetail extends StatefulWidget {
   final String jobID;
@@ -12,18 +14,19 @@ class JobDetail extends StatefulWidget {
 
 class JobDetailState extends State<JobDetail> {
   String userID = "Loading...";
-  String jobTitle  = "Loading...";
-  String jobDesc  = "Loading...";
-  String jobAllowance  = "Loading...";
-  String jobDuration  = "Loading...";
-  String jobStatus  = "Loading...";
-  String numApplicant  = "Loading...";
+  String jobTitle = "Loading...";
+  String jobDesc = "Loading...";
+  String jobAllowance = "Loading...";
+  String jobDuration = "Loading...";
+  String jobStatus = "Loading...";
+  String location = "Loading...";
   String companyName = 'Loading';
   String companyAddress = "Loading";
-  String logo = "Loading";
+  String logo = "";
   List<String> tags = [];
 
   bool hasApplied = false;
+  String companyID = "Loading...";
 
   @override
   void initState() {
@@ -47,22 +50,26 @@ class JobDetailState extends State<JobDetail> {
           jobAllowance = jobDoc.data()?['jobAllowance']?.toString() ?? 'N/A';
           jobDuration = jobDoc.data()?['jobDuration']?.toString() ?? 'N/A';
           jobStatus = jobDoc.data()?['jobStatus'] ?? 'No jobStatus';
-          numApplicant = jobDoc.data()?['numApplicant']?.toString() ?? 'N/A';
+          location = jobDoc.data()?['location'] ?? 'Malaysia';
           userID = jobDoc.data()?['userID'] ?? 'No userID';
           tags = List<String>.from(jobDoc.data()?['tags'] ?? []);
         });
 
+        // Fetch company details using the userID
         var companyDoc = await FirebaseFirestore.instance
-          .collection('Company')
-          .where('userID', isEqualTo: userID)
-          .get();
+            .collection('Company')
+            .where('userID', isEqualTo: userID)
+            .get();
 
         if (companyDoc.docs.isNotEmpty) {
           var companyData = companyDoc.docs.first.data();
           setState(() {
             companyName = companyData['companyName'] ?? 'No Company Name';
             companyAddress = companyData['companyAddress'] ?? 'No Company Address';
-            logo = companyData['logoURL'] ?? 'https://firebasestorage.googleapis.com/v0/b/imsfyp2.firebasestorage.app/o/logos%2FcomanyLogo.jpg?alt=media&token=9eeccbe4-fcde-4b36-b6e8-cec7eece49de';
+            logo = (companyData['logoURL'] == null || companyData['logoURL'].toString().isEmpty)
+                ? 'https://firebasestorage.googleapis.com/v0/b/imsfyp2.firebasestorage.app/o/logos%2FcomanyLogo.jpg?alt=media&token=9eeccbe4-fcde-4b36-b6e8-cec7eece49de'
+                : companyData['logoURL'];
+            companyID = companyData['companyID'] ?? 'No Company ID';  // Assign companyID
           });
         }
       }
@@ -115,17 +122,16 @@ class JobDetailState extends State<JobDetail> {
       );
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const  Text("Job Detail"),
-        backgroundColor: Colors.white,
-        centerTitle: true,
+        backgroundColor: AppColors.backgroundCream,
+        elevation: 0,
       ),
-      backgroundColor: Colors.white,
-            body: SingleChildScrollView(
+      backgroundColor: AppColors.backgroundCream,
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Center(
           child: ConstrainedBox(
@@ -139,14 +145,40 @@ class JobDetailState extends State<JobDetail> {
                 const SizedBox(height: 16),
                 Text(
                   jobTitle,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
-                _buildInfoRow(Icons.business, companyName),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CompanyDetailPage(companyId: companyID),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.business, color: Colors.blueAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        companyName,
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 _buildInfoRow(Icons.location_on, companyAddress),
                 _buildInfoRow(Icons.attach_money, "Allowance: RM $jobAllowance"),
                 _buildInfoRow(Icons.timer, "Duration: $jobDuration months"),
-                _buildInfoRow(Icons.group, "Applicants: $numApplicant"),
+                _buildInfoRow(Icons.group, "Location: $location"),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8.0,

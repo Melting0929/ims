@@ -12,7 +12,7 @@ import 'add_assessment.dart';
 import 'edit_assessment.dart';
 import 'color.dart';
 
-
+// Intake Period
 class ManageAssessment extends StatefulWidget {
   final String userId;
   const ManageAssessment({super.key, required this.userId});
@@ -42,6 +42,12 @@ class ManageAssessmentTab extends State<ManageAssessment> {
   String selectedIntakePeriod = 'All';
 
   List<String> studentNames = [];
+
+  List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
+                        'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
+                        'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
+                        'Jan-Apr 2024', 'May-Aug 2024', 'Sept-Dec 2024', 
+                        'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025'];
 
   @override
   void initState() {
@@ -131,9 +137,10 @@ class ManageAssessmentTab extends State<ManageAssessment> {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -180,12 +187,12 @@ class ManageAssessmentTab extends State<ManageAssessment> {
           'assessmentID': assessment.id,
           'templateID': assessment['templateID'] ?? '',
           'studID': assessment['studID'] ?? '',
-          'intakePeriod': assessment['intakePeriod'] ?? '',
           'submissionURL': assessment['submissionURL'] ?? '',
           'submissionDate': assessment['submissionDate'] ?? '',
           'assessmentOpenDate': assessment['assessmentOpenDate'] ?? '',
           'assessmentEndDate': assessment['assessmentEndDate'] ?? '',
-          'submissionStatus': submissionStatus, 
+          'submissionStatus': submissionStatus,
+          'intakePeriod': assessment['intakePeriod'] ?? '',
           'templateTitle': '',
           'studentName': '',
         };
@@ -227,6 +234,7 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         // Filter based on selected student name
         if ((selectedStudentName == 'All' || assessmentData['studentName'] == selectedStudentName) &&
             (selectedAssessmentName == 'All' || assessmentData['templateTitle'] == selectedAssessmentName) &&
+            (selectedIntakePeriod == 'All' || assessmentData['intakePeriod'] == selectedIntakePeriod) &&
             (selectedSubmissionStatus == 'All' || assessmentData['submissionStatus'] == selectedSubmissionStatus)) {
           assessments.add(assessmentData);
         }
@@ -309,12 +317,12 @@ class ManageAssessmentTab extends State<ManageAssessment> {
       columns: const [
         DataColumn(label: Text('Student Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Assessment Name', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Intake Period', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Assessment Open Date', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Assessment End Date', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Submission URL', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Submission Date', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Submission Status', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Intake Period', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
       source: AssessmentData(widget.userId, data, context, rowEvenColor, rowOddColor, _refreshData),
@@ -343,334 +351,344 @@ class ManageAssessmentTab extends State<ManageAssessment> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Manage Assessment Page"),
-        centerTitle: true,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
+        ),
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Manage Assessment"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            supervisorName,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            supervisorEmail,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EprofileSupervisor(userId: widget.userId),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => SupervisorDashboard(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.task,
+                      title: "Manage Assessment Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageAssessment(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Download Document Page",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+
+              // Footer Text
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Supervisor Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(
-                          supervisorName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        ElevatedButton.icon(
+                          onPressed: _refreshData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          label: const Text("Refresh"),
                         ),
-                        Text(
-                          supervisorEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddAssessment(userId: widget.userId, refreshCallback: _refreshData),
+                              ),
+                            );
+                            if (result == true) {
+                              _refreshData(); // Refresh data when returning from the update page
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondaryYellow,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          icon: const Icon(Icons.assignment_add, color: Colors.black),
+                          label: const Text("Add Assessment", style: TextStyle(color: Colors.black)),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EprofileSupervisor(userId: widget.userId),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const Text(
+                          "Student Name:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
-                      );
-                    },
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 1.5),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedStudentName,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(color: Colors.black, fontSize: 14),
+                              items: ['All', ...studentNames].map((name) {
+                                return DropdownMenuItem(
+                                  value: name,
+                                  child: Text(name),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  selectedStudentName = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 30),
+                        const Text(
+                          "Intake Period:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 1.5),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedIntakePeriod,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(color: Colors.black, fontSize: 14),
+                              items: intakes.map((intake) {
+                                return DropdownMenuItem(
+                                  value: intake,
+                                  child: Text(intake),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  selectedIntakePeriod = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 30),
+                        const Text(
+                          "Assessment Name:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 1.5),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedAssessmentName,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(color: Colors.black, fontSize: 14),
+                              items: assessmentNames.map((name) {
+                                return DropdownMenuItem(
+                                  value: name,
+                                  child: Text(name),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  selectedAssessmentName = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 30),
+                        const Text(
+                          "Submission Status:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 1.5),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedSubmissionStatus,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(color: Colors.black, fontSize: 14),
+                              items: ["All", "Active", "Due"].map((title) {
+                                return DropdownMenuItem(
+                                  value: title,
+                                  child: Text(title),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  selectedSubmissionStatus = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 30),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: _buildFutureTable(
+                      future: _getAssessmentData(),
+                      builder: _buildTable,
+                    ),
                   ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => SupervisorDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.task,
-                    title: "Manage Assessment Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageAssessment(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Download Document Page",
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-            // Footer Text
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Supervisor Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
               ),
             ),
           ],
         ),
-      ),
-      backgroundColor: Colors.white,
-      body: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _refreshData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text("Refresh"),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddAssessment(userId: widget.userId, refreshCallback: _refreshData),
-                            ),
-                          );
-                          if (result == true) {
-                            _refreshData(); // Refresh data when returning from the update page
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryYellow,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.assignment_add, color: Colors.black),
-                        label: const Text("Add Assessment", style: TextStyle(color: Colors.black)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      const Text(
-                        "Student Name:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedStudentName,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ['All', ...studentNames].map((name) {
-                              return DropdownMenuItem(
-                                value: name,
-                                child: Text(name),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedStudentName = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      const Text(
-                        "Intake Period:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedIntakePeriod,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ['Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'].map((intake) {
-                              return DropdownMenuItem(
-                                value: intake,
-                                child: Text(intake),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedIntakePeriod = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      const Text(
-                        "Assessment Name:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedAssessmentName,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: assessmentNames.map((name) {
-                              return DropdownMenuItem(
-                                value: name,
-                                child: Text(name),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedAssessmentName = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      const Text(
-                        "Submission Status:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedSubmissionStatus,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ["All", "Active", "Due"].map((title) {
-                              return DropdownMenuItem(
-                                value: title,
-                                child: Text(title),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedSubmissionStatus = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: _buildFutureTable(
-                    future: _getAssessmentData(),
-                    builder: _buildTable,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -701,7 +719,6 @@ class AssessmentData extends DataTableSource {
       cells: [
         DataCell(Text(item['studentName'] ?? '')),
         DataCell(Text(item['templateTitle'] ?? '')),
-        DataCell(Text(item['intakePeriod'] ?? '')),
         DataCell(Text(item['assessmentOpenDate'] != null
             ? dateFormat.format((item['assessmentOpenDate'] as Timestamp).toDate())
             : 'N/A')),
@@ -745,6 +762,7 @@ class AssessmentData extends DataTableSource {
           ),
         ),
         DataCell(Text(item['submissionStatus'] ?? '')),
+        DataCell(Text(item['intakePeriod'] ?? '')),
         DataCell(
           Row(
             children: [

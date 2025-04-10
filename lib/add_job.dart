@@ -27,55 +27,15 @@ class _AddJobState extends State<AddJob> {
   Map<String, String> companyMap = {};
 
   List<String> programs = [
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Aerospace Engineering',
-    'Mechatronics Engineering',
-    'Biomedical Engineering',
-    'Chemical Engineering',
-    'Computer Science',
-    'Information Technology',
-    'Software Engineering',
-    'Cybersecurity',
-    'Data Science',
-    'Game Development',
-    'Business Administration',
-    'Finance & Banking',
-    'Accounting',
-    'Human Resource Management',
-    'Supply Chain Management',
-    'Entrepreneurship',
-    'Digital Marketing',
-    'Brand Management',
-    'Market Research',
-    'Advertising & Media',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biotechnology',
-    'Environmental Science',
-    'Medicine',
-    'Nursing',
-    'Pharmacy',
-    'Physiotherapy',
-    'Dentistry',
-    'Biomedical Science',
-    'Graphic Design',
-    'Multimedia & Animation',
-    'Film & Television Production',
-    'Fine Arts',
-    'Interior Design',
-    'Psychology',
-    'Sociology',
-    'Political Science',
-    'International Relations',
-    'Law',
-    'Communication & Media Studies',
-    'Early Childhood Education',
-    'Primary Education',
-    'Secondary Education',
-    'TESOL',
+    'Engineering',
+    'IT',
+    'Business',
+    'Marketing',
+    'Science',
+    'Health & Medical',
+    'Arts & Design',
+    'Social Sciences',
+    'Education',
   ];
 
   // Text editing controllers
@@ -84,7 +44,7 @@ class _AddJobState extends State<AddJob> {
   final TextEditingController jobStatusController = TextEditingController();
   final TextEditingController jobAllowanceController = TextEditingController();
   final TextEditingController jobDurationController = TextEditingController();
-  final TextEditingController numApplicantController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
   final TextEditingController tagsController = TextEditingController();
 
   RegExp numRegExp = RegExp(r'^\d+$');
@@ -194,12 +154,12 @@ class _AddJobState extends State<AddJob> {
       Map<String, dynamic> jobData = {
         'jobTitle': jobTitleController.text.trim(),
         'jobDesc': jobDescController.text.trim(),
-        'jobType': jobType,
+        'jobType': jobType, 
         'program': program,
         'jobStatus': jobStatus,
         'jobAllowance': double.tryParse(jobAllowanceController.text.trim()) ?? 0.0,
         'jobDuration': int.tryParse(jobDurationController.text.trim()) ?? 0,
-        'numApplicant': int.tryParse(numApplicantController.text.trim()) ?? 0,
+        'location': locationController.text.trim(),
         'tags': jobTags,
         'companyID': selectedCompanyID,
         'userID': widget.userId,
@@ -217,7 +177,7 @@ class _AddJobState extends State<AddJob> {
         jobStatusController.clear();
         jobAllowanceController.clear();
         jobDurationController.clear();
-        numApplicantController.clear();
+        locationController.clear();
         tagsController.clear();
 
         widget.refreshCallback();
@@ -235,12 +195,16 @@ class _AddJobState extends State<AddJob> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Job Posting Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -349,15 +313,19 @@ class _AddJobState extends State<AddJob> {
                                   controller: jobDescController,
                                   decoration: InputDecoration(
                                     labelText: "Job Description",
-                                    hintText: "Enter the job description",
+                                    hintText: "Provide a brief description of the job",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     prefixIcon: const Icon(Icons.description),
                                   ),
+                                  maxLines: 5, // Allows up to 5 lines for longer text input
+                                  keyboardType: TextInputType.multiline, // Enables multiline input
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return "Please enter the job description.";
+                                      return "Please enter a valid job description.";
+                                    } else if (value.length < 20) {
+                                      return "The description should be at least 20 characters long.";
                                     }
                                     return null;
                                   },
@@ -426,17 +394,18 @@ class _AddJobState extends State<AddJob> {
                                 ),
                                 const SizedBox(height: 16),
                                 TextFormField(
-                                  controller: numApplicantController,
+                                  controller: locationController,
                                   decoration: InputDecoration(
-                                    labelText: "Number of Applicant Needed",
+                                    labelText: "Job Location",
+                                    hintText: "Enter the job location",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    prefixIcon: const Icon(Icons.group),
+                                    prefixIcon: const Icon(Icons.location_on),
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty || !numRegExp.hasMatch(value)) {
-                                      return "Please enter a valid number of applicant needed (e.g. 3).";
+                                    if (value == null || value.isEmpty) {
+                                      return "Job Location cannot be empty.";
                                     }
                                     return null;
                                   },

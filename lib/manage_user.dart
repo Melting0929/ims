@@ -21,7 +21,11 @@ import 'add_company.dart';
 import 'add_student.dart';
 import 'add_supervisor.dart';
 
-// OfferLetter replace  Resume (Student)
+import 'student_detail.dart';
+import 'company_detail.dart';
+import 'supervisor_detail.dart';
+
+// Add OfferLetter
 class ManageUser extends StatefulWidget {
   final String userId;
   const ManageUser({super.key, required this.userId});
@@ -154,9 +158,10 @@ void initState() {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -344,7 +349,7 @@ void initState() {
           'contactNo': user['contactNo'] ?? '',
           'password': user['password'] ?? '',
           'dept': student['dept'] ?? '',
-          'resumeURL': student['resumeURL'] ?? '',
+          'letterURL': student['letterURL'] ?? '',
           'specialization': student['specialization'] ?? '',
           'studProgram': student['studProgram'] ?? '',
           'companyName': companyName,
@@ -369,7 +374,7 @@ void initState() {
 
   Future<List<Map<String, dynamic>>> _getCompanyData() async {
     try {
-      QuerySnapshot companySnapshot = await FirebaseFirestore.instance.collection('Company').get();
+      QuerySnapshot companySnapshot = await FirebaseFirestore.instance.collection('Company').where('approvalStatus', isEqualTo: 'Approve').get();
       List<Map<String, dynamic>> companies = companySnapshot.docs.map((doc) {
         return {
           'companyID': doc.id,
@@ -523,7 +528,7 @@ void initState() {
         DataColumn(label: Text('Working\nCompany', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Supervisor', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Intake\nPeriod', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Resume', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Letter', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
       source: StudentData(data, context, rowEvenColor, rowOddColor, _refreshData),
@@ -558,7 +563,6 @@ void initState() {
         DataColumn(label: Text('Company Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Reg No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Industry', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Type', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Logo', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Approval\nStatus', style: TextStyle(color: Colors.white))),
@@ -823,7 +827,7 @@ void initState() {
       length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.backgroundCream,
           title: const Text("Manage User Page"),
           bottom:TabBar(
             tabs: tabs.map((tab) => Tab(text: tab)).toList(),
@@ -970,13 +974,13 @@ void initState() {
             ],
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.backgroundCream,
         body: Row(
           children: [
             Expanded(
               child: TabBarView(
                 children: [
-                   _buildTab(
+                  _buildTab(
                     title: "Student Management",
                     onAdd: () => _navigateToAddUser(context, "Student"),
                     onRefresh: _refreshData,
@@ -1124,7 +1128,7 @@ void initState() {
                     ],
                   ),
                   _buildTab(
-                    title: "Registered & External Company Management",
+                    title: "Registered Company Management",
                     onAdd: () => _navigateToAddUser(context, "Company"),
                     onRefresh: _refreshData,
                     future: _getCompanyData(),
@@ -1166,72 +1170,6 @@ void initState() {
                                 ),
                               );
                             }).toList(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      const Text(
-                        "Company Type:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedCompanyType,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ["All", "Registered", "External"].map((type) {
-                              return DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedCompanyType = newValue!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      const Text(
-                        "Approval Status:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedApprovalStatus,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: ["All", "Approve", "Pending"].map((title) {
-                              return DropdownMenuItem(
-                                value: title,
-                                child: Text(title),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedApprovalStatus = newValue!;
-                              });
-                            },
                           ),
                         ),
                       ),
@@ -1382,7 +1320,24 @@ class StudentData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['studID'] ?? '')),
+        DataCell(
+          Text(
+            item['studID'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentDetailPage(studentId: item['studID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['name'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['contactNo'] ?? '')),
@@ -1393,7 +1348,29 @@ class StudentData extends DataTableSource {
         DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['supervisorName'] ?? '')),
         DataCell(Text(item['intakePeriod'] ?? '')),
-        DataCell(Text(item['resumeURL'] ?? '')),
+        DataCell(
+          InkWell(
+            child: IconButton(
+              icon: const Icon(Icons.download, color: Colors.blue),
+              onPressed: () async {
+                final url = Uri.parse(item['letterURL']);
+                try {
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open the document or No Document')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+            ),
+          ),
+        ),  
         DataCell(
         Row(
           children: [
@@ -1481,14 +1458,30 @@ class CompanyData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['name'] ?? '')),
+        DataCell(
+          Text(
+            item['name'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompanyDetailPage(companyId: item['companyID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['contactNo'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['password'] ?? '')),
         DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['companyRegNo'] ?? '')),
         DataCell(Text(item['companyIndustry'] ?? '')),
-        DataCell(Text(item['companyType'] ?? '')),
         DataCell(Text(item['companyEmail'] ?? '')),
         
         DataCell(
@@ -1600,7 +1593,24 @@ class SupervisorData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['supervisorID'] ?? '')),
+        DataCell(
+          Text(
+            item['supervisorID'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SupervisorDetailPage(supervisorId: item['supervisorID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['name'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
         DataCell(Text(item['contactNo'] ?? '')),

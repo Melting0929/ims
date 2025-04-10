@@ -204,12 +204,16 @@ class EprofileCompanyTab extends State<EprofileCompany> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Company Profile Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(

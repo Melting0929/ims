@@ -1,8 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:ui';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'color.dart';
 
 class AddStudentPage extends StatefulWidget {
   final String userType;
@@ -44,6 +47,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
   Future<List<String>>? companyListFuture;
   String? selectedSupervisorName;
   String? selectedCompanyName;
+
+  PlatformFile? _selectedDocument;
+  String? _uploadedFileName;
 
   List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
                         'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
@@ -185,6 +191,62 @@ class _AddStudentPageState extends State<AddStudentPage> {
     companyListFuture = fetchCompanyNames();
   }
 
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+      withData: true, 
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _selectedDocument = result.files.single;
+        _uploadedFileName = result.files.single.name;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No document selected.')),
+      );
+    }
+  }
+
+  Future<String?> _uploadDocument() async {
+    if (_selectedDocument == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No document selected.')),
+      );
+      return null;
+    }
+
+    try {
+      final fileName = _uploadedFileName ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final storageRef = FirebaseStorage.instance.ref().child('letters/$fileName');
+
+      // Determine content type based on file extension
+      String fileExtension = fileName.split('.').last.toLowerCase();
+      String contentType = 'application/octet-stream'; // Default for unknown types
+
+      if (fileExtension == 'pdf') {
+        contentType = 'application/pdf';
+      } else if (fileExtension == 'doc') {
+        contentType = 'application/msword';
+      } else if (fileExtension == 'docx') {
+        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+
+      final metadata = SettableMetadata(contentType: contentType);
+      final uploadTask = storageRef.putData(_selectedDocument!.bytes!, metadata);
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload document: $e')),
+      );
+      return null;
+    }
+  }
 
   Future<List<String>> fetchSupervisorList() async {
     try {
@@ -243,6 +305,38 @@ class _AddStudentPageState extends State<AddStudentPage> {
     if (_formKey.currentState!.validate()) {
       String? supervisorID;
       String? companyID;
+
+      // Check if studID already exists
+      QuerySnapshot studentIdSnapshot = await FirebaseFirestore.instance
+          .collection('Student')
+          .where('studID', isEqualTo: studentIDController.text.trim())
+          .get();
+
+      if (studentIdSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Student ID already exists. Please use a different ID.')),
+        );
+        return;
+      }
+
+      // Check if email already exists
+      QuerySnapshot emailSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('email', isEqualTo: studentEmailController.text.trim())
+          .get();
+
+      if (emailSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email is already registered. Please use a different email.')),
+        );
+        return;
+      }
+
+      final documentUrl = await _uploadDocument();
+
+      if (documentUrl == null) {
+        return;
+      }
 
       try {
         if (selectedSupervisorName != 'No Supervisor') {
@@ -320,6 +414,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
           'supervisorID': supervisorID,
           'intakePeriod': studentIntakePeriod,
           'skill': null,
+          'letterURL': documentUrl,
         });
 
         // Clear fields
@@ -346,13 +441,16 @@ class _AddStudentPageState extends State<AddStudentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Student Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -649,6 +747,19 @@ class _AddStudentPageState extends State<AddStudentPage> {
                                     } 
                                     return const Text('No supervisors found');
                                   },
+                                ),
+                                const SizedBox(height: 16),
+                                const Text("Letter Document:"),
+                                const SizedBox(height: 5),
+                                ElevatedButton.icon(
+                                  onPressed: _pickDocument,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.backgroundCream,
+                                    foregroundColor: Colors.white,
+                                    elevation: 2,
+                                  ),
+                                  icon: const Icon(Icons.upload_file, color: Colors.black),
+                                  label: Text(_uploadedFileName ?? 'Upload Document', style: const TextStyle(color: Colors.black)),
                                 ),
                                 const SizedBox(height: 16),
                                 // Working Company Dropdown

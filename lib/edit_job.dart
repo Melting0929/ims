@@ -25,60 +25,20 @@ class EditJobTab extends State<EditJob> {
 
   double jobAllowance = 0.0;
   int jobDuration = 0;
-  int numApplicant = 0;
+  String location = "Loading...";
 
   List<String> jobTags = [];
 
-    List<String> programs = [
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Aerospace Engineering',
-    'Mechatronics Engineering',
-    'Biomedical Engineering',
-    'Chemical Engineering',
-    'Computer Science',
-    'Information Technology',
-    'Software Engineering',
-    'Cybersecurity',
-    'Data Science',
-    'Game Development',
-    'Business Administration',
-    'Finance & Banking',
-    'Accounting',
-    'Human Resource Management',
-    'Supply Chain Management',
-    'Entrepreneurship',
-    'Digital Marketing',
-    'Brand Management',
-    'Market Research',
-    'Advertising & Media',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biotechnology',
-    'Environmental Science',
-    'Medicine',
-    'Nursing',
-    'Pharmacy',
-    'Physiotherapy',
-    'Dentistry',
-    'Biomedical Science',
-    'Graphic Design',
-    'Multimedia & Animation',
-    'Film & Television Production',
-    'Fine Arts',
-    'Interior Design',
-    'Psychology',
-    'Sociology',
-    'Political Science',
-    'International Relations',
-    'Law',
-    'Communication & Media Studies',
-    'Early Childhood Education',
-    'Primary Education',
-    'Secondary Education',
-    'TESOL',
+  List<String> programs = [
+    'Engineering',
+    'IT',
+    'Business',
+    'Marketing',
+    'Science',
+    'Health & Medical',
+    'Arts & Design',
+    'Social Sciences',
+    'Education',
   ];
 
   // Text editing controllers
@@ -89,7 +49,7 @@ class EditJobTab extends State<EditJob> {
   final TextEditingController jobStatusController = TextEditingController();
   final TextEditingController jobAllowanceController = TextEditingController();
   final TextEditingController jobDurationController = TextEditingController();
-  final TextEditingController numApplicantController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
   final TextEditingController tagController = TextEditingController();
 
   RegExp numRegExp = RegExp(r'^\d+$');
@@ -117,7 +77,7 @@ class EditJobTab extends State<EditJob> {
           jobStatus = jobDoc.data()?['jobStatus'] ?? 'No jobStatus';
           jobAllowance = (jobDoc.data()?['jobAllowance'] as num?)?.toDouble() ?? 0.0;
           jobDuration = (jobDoc.data()?['jobDuration'] as num?)?.toInt() ?? 0;
-          numApplicant = (jobDoc.data()?['numApplicant'] as num?)?.toInt() ?? 0;
+          location = jobDoc.data()?['location'] ?? 'No location';
           jobTags = List<String>.from(jobDoc.data()?['tags'] ?? []);
 
           // Set the values to the controllers
@@ -128,7 +88,7 @@ class EditJobTab extends State<EditJob> {
           jobStatusController.text = jobStatus;
           jobAllowanceController.text = jobAllowance.toStringAsFixed(2);
           jobDurationController.text = jobDuration.toString();
-          numApplicantController.text = numApplicant.toString();
+          locationController.text = location;
         });
       }
     } catch (e) {
@@ -140,12 +100,16 @@ class EditJobTab extends State<EditJob> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Job Posting Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -311,17 +275,18 @@ class EditJobTab extends State<EditJob> {
                                 ),
                                 const SizedBox(height: 16),
                                 TextFormField(
-                                  controller: numApplicantController,
+                                  controller: locationController,
                                   decoration: InputDecoration(
-                                    labelText: "Number of Applicant Needed",
+                                    labelText: "Job Location",
+                                    hintText: "Enter the job location",
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    prefixIcon: const Icon(Icons.group),
+                                    prefixIcon: const Icon(Icons.location_on),
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty|| !numRegExp.hasMatch(value)) {
-                                      return "Please enter a valid number of applicant needed (e.g. 3).";
+                                    if (value == null || value.isEmpty) {
+                                      return "Job Location cannot be empty.";
                                     }
                                     return null;
                                   },
@@ -434,7 +399,7 @@ class EditJobTab extends State<EditJob> {
 
                                             double updatedJobAllowance = double.tryParse(jobAllowanceController.text) ?? 0.0;
                                             int updatedJobDuration = int.tryParse(jobDurationController.text.trim()) ?? 0;
-                                            int updatedNumApplicant = int.tryParse(numApplicantController.text.trim()) ?? 0;
+                                            String updatedLocation = locationController.text;
 
                                             // Update Firestore data
                                             try {
@@ -444,7 +409,7 @@ class EditJobTab extends State<EditJob> {
                                                 'jobStatus': jobStatus,
                                                 'jobAllowance': updatedJobAllowance,
                                                 'jobDuration': updatedJobDuration,
-                                                'numApplicant': updatedNumApplicant,
+                                                'location': updatedLocation,
                                                 'tags': jobTags,
                                                 'program': program,
                                               };

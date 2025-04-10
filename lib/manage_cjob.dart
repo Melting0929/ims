@@ -98,9 +98,10 @@ void initState() {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -207,7 +208,7 @@ void initState() {
             'jobType': job['jobType'] ?? '',
             'program': job['program'] ?? '',
             'jobStatus': job['jobStatus'] ?? '',
-            'numApplicant': job['numApplicant'] ?? '',
+            'location': job['location'] ?? '',
             'userID': job['userID'],
             'tags': job['tags'] ?? [], 
           });
@@ -254,7 +255,7 @@ void initState() {
         DataColumn(label: Text('Job Duration', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Desired Program', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Status', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Number of\nApplicant Needed', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Location', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Tags', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
@@ -284,274 +285,284 @@ void initState() {
 
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Manage Job Posting Page"),
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          placementName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          placementEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EprofileCompany(userId: widget.userId),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Drawer Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => CompanyDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.people,
-                    title: "Manage Applicant Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageApplicant(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.work,
-                    title: "Manage Job Posting Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageCJob(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Download Document Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-
-            // Footer Section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Company Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
-              ),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
         ),
-        
       ),
-      backgroundColor: Colors.white,
-      body: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _refreshData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text("Refresh"),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async{
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddJob(userId: widget.userId, refreshCallback: _refreshData),
-                            ),
-                          );
-                          if (result == true) {
-                            _refreshData(); // Refresh data when returning from the update page
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryYellow,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.assignment_add, color: Colors.black),
-                        label: const Text("Add Job Posting", style: TextStyle(color: Colors.black)),
-                      ),
-                    ], 
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Manage Job Posting"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
                   children: [
-                    const Text(
-                      "Job Titles:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black, width: 1.5),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedJobTitle,
-                          onChanged: (value) {
-                            setState(() {
-                              selectedJobTitle = value;
-                            });
-                          },
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                          dropdownColor: Colors.white,
-                          style: const TextStyle(color: Colors.black, fontSize: 14),
-                          items: jobTitles.map((title) {
-                            return DropdownMenuItem<String>(
-                              value: title,
-                              child: Text(title),
-                            );
-                          }).toList(),
-                        ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            placementName,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            placementEmail,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      "Job Status:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EprofileCompany(userId: widget.userId),
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black, width: 1.5),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Drawer Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => CompanyDashboard(userId: widget.userId)),
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedJobStatus,
-                          onChanged: (newValue) {
-                            setState(() {
-                              selectedJobStatus = newValue;
-                            });
-                          },
-                          items: jobStatuses.map((status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(status),
-                            );
-                          }).toList(),
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                          dropdownColor: Colors.white,
-                          style: const TextStyle(color: Colors.black, fontSize: 14),
-                        ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.people,
+                      title: "Manage Applicant Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageApplicant(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.work,
+                      title: "Manage Job Posting Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageCJob(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Download Document Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _buildFutureTable(
-                    future: _getJobData(),
-                    builder: _buildTable,
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+
+              // Footer Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Company Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+        body: Row(
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _refreshData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                          ),
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          label: const Text("Refresh"),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async{
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddJob(userId: widget.userId, refreshCallback: _refreshData),
+                              ),
+                            );
+                            if (result == true) {
+                              _refreshData(); // Refresh data when returning from the update page
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondaryYellow,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                          ),
+                          icon: const Icon(Icons.assignment_add, color: Colors.black),
+                          label: const Text("Add Job Posting", style: TextStyle(color: Colors.black)),
+                        ),
+                      ], 
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Text(
+                        "Job Titles:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedJobTitle,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedJobTitle = value;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                            items: jobTitles.map((title) {
+                              return DropdownMenuItem<String>(
+                                value: title,
+                                child: Text(title),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        "Job Status:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedJobStatus,
+                            onChanged: (newValue) {
+                              setState(() {
+                                selectedJobStatus = newValue;
+                              });
+                            },
+                            items: jobStatuses.map((status) {
+                              return DropdownMenuItem(
+                                value: status,
+                                child: Text(status),
+                              );
+                            }).toList(),
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: Colors.black, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: _buildFutureTable(
+                      future: _getJobData(),
+                      builder: _buildTable,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -585,7 +596,7 @@ class JobData extends DataTableSource {
         DataCell(Text(item['jobDuration'].toString())),
         DataCell(Text(item['program'] ?? '')),
         DataCell(Text(item['jobStatus'] ?? '')),
-        DataCell(Text(item['numApplicant'].toString())),
+        DataCell(Text(item['location'])),
         DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
         DataCell(
         Row(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'mobile_start.dart';
+import 'login_mobile.dart';
 import 'login_web.dart';
 
 void main() async {
@@ -322,7 +322,7 @@ class IMS extends StatelessWidget {
         primarySwatch: Colors.blue,
         fontFamily: 'Jost',
       ),
-      home: kIsWeb ?  const LoginWeb() : const WelcomeSlider(),
+      home: kIsWeb ?  const LoginWeb() : const LoginTab(),
     );
   }
 }

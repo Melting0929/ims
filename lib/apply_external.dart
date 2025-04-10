@@ -24,6 +24,57 @@ class _AddExternalState extends State<AddExternal> {
 
   PlatformFile? _selectedDocument;
   String? _uploadedFileName;
+  bool _isOfferLetterMissing = false;
+
+
+  List<String> companyIndustries = [
+    'Information Technology',
+    'Software Development',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Manufacturing',
+    'Construction',
+    'Real Estate',
+    'Telecommunications',
+    'Marketing & Advertising',
+    'Automotive',
+    'E-commerce',
+    'Energy & Utilities',
+    'Hospitality',
+    'Transportation & Logistics',
+    'Media & Entertainment',
+    'Insurance',
+    'Pharmaceuticals',
+    'Food & Beverage',
+    'Retail Store',
+    'Tourism',
+    'Non-Profit',
+    'Government & Public Sector',
+    'Legal Services',
+    'Consulting',
+    'Research & Development',
+    'Architecture',
+    'Agriculture',
+    'Electronics',
+    'Fashion & Apparel',
+    'Sports & Recreation',
+    'Financial Services',
+    'Aerospace & Defense',
+    'Biotechnology',
+    'Chemicals',
+    'Marine & Shipping',
+    'Wholesale & Distribution',
+    'Human Resources',
+    'Security Services',
+    'Art & Design',
+    'Environmental Services',
+    'Healthcare Services',
+    'IT Services',
+    'Logistics & Supply Chain',
+    'Media Production',
+    'Event Management',
+  ];
 
   // Text editing controllers
   final TextEditingController jobTitleController = TextEditingController();
@@ -42,8 +93,7 @@ class _AddExternalState extends State<AddExternal> {
 
   RegExp emailRegExp = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
-  RegExp companyRegNoRegExp = RegExp(r'^[a-zA-Z0-9]+$');
-  RegExp yearRegExp = RegExp(r'^(19|20)\d{2}$');
+  RegExp yearRegExp = RegExp(r'^(1|2)\d{3}$');
   RegExp empNoRegExp = RegExp(r'^[0-9]+$');
   RegExp numRegExp = RegExp(r'^\d+$');
 
@@ -130,6 +180,20 @@ class _AddExternalState extends State<AddExternal> {
   }
   
   Future<void> saveData() async {
+    if (_selectedDocument == null) {
+      setState(() {
+        _isOfferLetterMissing = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload the offer letter.')),
+      );
+      return;
+    } else {
+      setState(() {
+        _isOfferLetterMissing = false;
+      });
+    }
+
     if (_formKey.currentState!.validate()) {
       final documentUrl = await _uploadDocument();
 
@@ -189,14 +253,21 @@ class _AddExternalState extends State<AddExternal> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Apply External Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 30, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -214,7 +285,10 @@ class _AddExternalState extends State<AddExternal> {
           Center(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 80.0, vertical: 20.0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16.0 : 80.0,
+                  vertical: isMobile ? 16.0 : 20.0,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -224,7 +298,7 @@ class _AddExternalState extends State<AddExternal> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
-                          width: 500,
+                          width: isMobile ? double.infinity : 500,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
@@ -237,14 +311,21 @@ class _AddExternalState extends State<AddExternal> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   "Apply External Company",
-                                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 22 : 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
+                                Text(
                                   "Enter the information below",
-                                  style: TextStyle(fontSize: 16, color: Colors.black),
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 14 : 16,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 20),
                                 _buildTextField(companyNameController, "Company Name", Icons.apartment_outlined),
@@ -271,7 +352,7 @@ class _AddExternalState extends State<AddExternal> {
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     prefixIcon: const Icon(Icons.villa),
                                   ),
-                                  items: <String>["Software Technology", "Manufacturing", "Retail Store", "E-Commerce"]
+                                  items: companyIndustries
                                       .map((String value) => DropdownMenuItem<String>(
                                             value: value,
                                             child: Text(value),
@@ -282,43 +363,13 @@ class _AddExternalState extends State<AddExternal> {
                                       companyIndustry = newValue ?? '';
                                     });
                                   },
-                                  validator: (value) => value == null || value.isEmpty ? "Please select an industry." : null,
+                                  validator: (value) =>
+                                      value == null || value.isEmpty ? "Please select an industry." : null,
                                 ),
                                 const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: jobTitleController,
-                                  decoration: InputDecoration(
-                                    labelText: "Job Title",
-                                    hintText: "Enter the job title",
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: const Icon(Icons.title),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Please enter the job title.";
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField(jobTitleController, "Job Title", Icons.title),
                                 const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: jobDurationController,
-                                  decoration: InputDecoration(
-                                    labelText: "Job Duration (in months)",
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: const Icon(Icons.calendar_month),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty || !numRegExp.hasMatch(value)) {
-                                      return "Please enter a valid job duration (e.g. 3).";
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                _buildTextField(jobDurationController, "Job Duration (in months)", Icons.timer),
                                 const SizedBox(height: 16),
                                 const Text("Offer Letter:"),
                                 const SizedBox(height: 5),
@@ -330,14 +381,26 @@ class _AddExternalState extends State<AddExternal> {
                                     elevation: 2,
                                   ),
                                   icon: const Icon(Icons.upload_file, color: Colors.black),
-                                  label: Text(_uploadedFileName ?? 'Upload Document', style: const TextStyle(color: Colors.black)),
+                                  label: Text(
+                                    _uploadedFileName ?? 'Upload Document',
+                                    style: const TextStyle(color: Colors.black),
+                                  ),
                                 ),
+                                if (_isOfferLetterMissing)
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      "Please upload the offer letter.",
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
                                 const SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                Wrap(
+                                  spacing: 16,
+                                  runSpacing: 8,
+                                  alignment: WrapAlignment.end,
                                   children: [
                                     _buildButton("Apply", Colors.black, saveData),
-                                    const SizedBox(width: 16),
                                     _buildButton("Cancel", Colors.redAccent, () => Navigator.pop(context)),
                                   ],
                                 ),
@@ -386,9 +449,6 @@ class _AddExternalState extends State<AddExternal> {
         }
         if (isPhone && value!.isNotEmpty && !phoneRegExp.hasMatch(value)) {
           return "Please enter a valid contact number.";
-        }
-        if (isRegister && value!.isNotEmpty && !companyRegNoRegExp.hasMatch(value)) {
-          return "Please enter a valid registration number.";
         }
         if (isYear && value!.isNotEmpty && !yearRegExp.hasMatch(value)) {
           return "Please enter a valid year (e.g., 2005).";

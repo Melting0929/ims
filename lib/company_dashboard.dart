@@ -117,9 +117,10 @@ class CompanyDashboardState extends State<CompanyDashboard> {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -146,285 +147,307 @@ class CompanyDashboardState extends State<CompanyDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const  Text("Company Dashboard"),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          placementName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          placementEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EprofileCompany(userId: widget.userId),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Drawer Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => CompanyDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.people,
-                    title: "Manage Applicant Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageApplicant(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.work,
-                    title: "Manage Job Posting Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageCJob(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Download Document Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-
-            // Footer Section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Company Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
-              ),
-            ),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
         ),
-        
       ),
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 30.0, top: 20.0),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Dashboard"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.blue.shade50,
-                        foregroundColor: Colors.black,
-                        child: const Icon(Icons.business, size: 40),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            companyName,
+                            placementName,
                             style: const TextStyle(
-                              fontSize: 20,
+                              color: Colors.black,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            companyIndustry,
+                            placementEmail,
                             style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            companyDesc,
-                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EprofileCompany(userId: widget.userId),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 70),
-              Center(
-                child: Card(
-                  elevation: 2,
-                  color: Colors.blue.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildDetailCard("Registration Number", companyRegNo, Icons.business),
-                        const SizedBox(width: 16),
-                        _buildDetailCard("Year of Establishment", year, Icons.calendar_today),
-                        const SizedBox(width: 16),
-                        _buildDetailCard("Number of Employees", emp, Icons.people),
-                      ],
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Drawer Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => CompanyDashboard(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.people,
+                      title: "Manage Applicant Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageApplicant(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.work,
+                      title: "Manage Job Posting Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageCJob(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Download Document Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => DownloadGuideline(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 70),
-              const Text(
-                "Placement Contact",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(30.0),
-                  child: Table(
-                    border: TableBorder.all(color: Colors.grey),
-                    columnWidths: const {
-                      0: FlexColumnWidth(2),
-                      1: FlexColumnWidth(1.5),
-                      2: FlexColumnWidth(2),
-                      3: FlexColumnWidth(1),
-                    },
-                    children: [
-                      TableRow(
-                        decoration: BoxDecoration(color: Colors.blue.shade50),
-                        children: const [
-                          Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text("Placement Contact Full Name", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text("Job Title", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text("Email", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text("Phone Number", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(placementName),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(placementJobTitle),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(placementEmail),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(placementContactNo),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+
+
+              // Footer Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Company Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
                 ),
               ),
             ],
+          ),
+          
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 30.0, top: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.blue.shade50,
+                          foregroundColor: Colors.black,
+                          child: const Icon(Icons.business, size: 40),
+                        ),
+                        const SizedBox(width: 18),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              companyName,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              companyIndustry,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                              child: Text(
+                                companyDesc,
+                                style: const TextStyle(fontSize: 15, height: 1.4),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 70),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SingleChildScrollView(  // Make the content scrollable
+                      scrollDirection: Axis.horizontal,  // Scroll horizontally
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildDetailCard("Registration Number", companyRegNo, Icons.business),
+                          const SizedBox(width: 16),
+                          _buildDetailCard("Year of Establishment", year, Icons.calendar_today),
+                          const SizedBox(width: 16),
+                          _buildDetailCard("Number of Employees", emp, Icons.people),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 70),
+                Center( // Centers the Card horizontally and vertically
+                  child: Card(
+                    //color: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: constraints.maxWidth* 0.7, // Set table width dynamically
+                              child: Table(
+                                border: TableBorder.all(color: Colors.grey),
+                                columnWidths: const {
+                                  0: FlexColumnWidth(2),
+                                  1: FlexColumnWidth(1.5),
+                                  2: FlexColumnWidth(2),
+                                  3: FlexColumnWidth(1),
+                                },
+                                children: [
+                                  const TableRow(
+                                    decoration: BoxDecoration(color: Colors.black),
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Text("Placement Contact Full Name",
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Text("Job Title",
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Text("Email",
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Text("Phone Number",
+                                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                      ),
+                                    ],
+                                  ),
+                                  TableRow(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(placementName),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(placementJobTitle),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(placementEmail),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(placementContactNo),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

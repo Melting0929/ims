@@ -113,12 +113,16 @@ class EditGuidelineTab extends State<EditGuideline> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Guideline Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -195,7 +199,7 @@ class EditGuidelineTab extends State<EditGuideline> {
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      prefixIcon: const Icon(Icons.email),
+                                      prefixIcon: const Icon(Icons.description),
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
@@ -247,7 +251,7 @@ class EditGuidelineTab extends State<EditGuideline> {
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      prefixIcon: const Icon(Icons.call),
+                                      prefixIcon: const Icon(Icons.security),
                                     ),
                                     items: <String>['Supervisor', 'Student', 'Company']
                                         .map<DropdownMenuItem<String>>((String value) {
@@ -299,7 +303,7 @@ class EditGuidelineTab extends State<EditGuideline> {
 
                                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guideline updated successfully')));
                                                 widget.refreshCallback();
-                                              Navigator.of(context).pop(true);
+                                                Navigator.of(context).pop(true);
                                               } catch (e) {
                                                 debugPrint("Error updating guideline: $e");
                                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update guideline')));

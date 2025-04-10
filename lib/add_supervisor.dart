@@ -34,6 +34,32 @@ class _AddSupervisorPageState extends State<AddSupervisorPage> {
   // Save user to Firestore
   Future<void> saveUser() async {
     if (_formKey.currentState!.validate()) {
+      // Check if studID already exists
+      QuerySnapshot studentIdSnapshot = await FirebaseFirestore.instance
+          .collection('Supervisor')
+          .where('supervisorID', isEqualTo: supervisorIDController.text.trim())
+          .get();
+
+      if (studentIdSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Supervisor ID already exists. Please use a different ID.')),
+        );
+        return;
+      }
+
+      // Check if email already exists
+      QuerySnapshot emailSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('email', isEqualTo: supervisorEmailController.text.trim())
+          .get();
+
+      if (emailSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email is already registered. Please use a different email.')),
+        );
+        return;
+      }
+
       Map<String, dynamic> userData = {
         'name': supervisorNameController.text.trim(),
         'email': supervisorEmailController.text.trim(),
@@ -79,12 +105,16 @@ class _AddSupervisorPageState extends State<AddSupervisorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Supervisor Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -220,7 +250,7 @@ class _AddSupervisorPageState extends State<AddSupervisorPage> {
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    prefixIcon: const Icon(Icons.call),
+                                    prefixIcon: const Icon(Icons.apartment),
                                   ),
                                   items: depts 
                                       .map<DropdownMenuItem<String>>((String value) {

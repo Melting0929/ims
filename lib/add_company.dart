@@ -3,7 +3,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// companyID & contact no. validation
+
 class AddCompanyPage extends StatefulWidget {
   final String userType;
   final VoidCallback refreshCallback;
@@ -17,7 +17,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
   final _formKey = GlobalKey<FormState>();
   String companyIndustry = '';
 
-    List<String> companyIndustries = [
+  List<String> companyIndustries = [
     'Information Technology',
     'Software Development',
     'Healthcare',
@@ -90,6 +90,19 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
   // Save user to Firestore
   Future<void> saveUser() async {
     if (_formKey.currentState!.validate()) {
+      // Check if studID already exists
+      QuerySnapshot studentIdSnapshot = await FirebaseFirestore.instance
+          .collection('Company')
+          .where('companyRegNo', isEqualTo: companyRegNoController.text.trim())
+          .get();
+
+      if (studentIdSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Company already exists. Please proceed to other action.')),
+        );
+        return;
+      }
+
       Map<String, dynamic> userData = {
         'name': placementContactNameController.text.trim(),
         'email': placementContactEmailController.text.trim(),
@@ -107,7 +120,7 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
         String userID = userRef.id;
 
         // Generate a new document ID for the admin document
-        await FirebaseFirestore.instance.collection('Company').add({
+        var companyRef = await FirebaseFirestore.instance.collection('Company').add({
           'userID': userID,
           'companyName': companyNameController.text.trim(),
           'companyIndustry': companyIndustry,
@@ -120,7 +133,12 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
           'approvalStatus': 'Approve',
           'pContactJobTitle': placementContactJobTitleController.text.trim(),
           'companyType': 'External',
+          'companyID': '',
           'logoURL': '',
+        });
+
+        await companyRef.update({
+          'companyID': companyRef.id, // Set the companyID to the document ID
         });
 
         // Clear fields
@@ -152,12 +170,16 @@ class _AddCompanyPageState extends State<AddCompanyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add External Company Page"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: true,
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
+          onPressed: () => Navigator.of(context).pop(), // Default back button action
+        ),
       ),
-      //extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           Positioned.fill(

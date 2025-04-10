@@ -91,18 +91,17 @@ void initState() {
           'exCompEmail': external['exCompEmail'] ?? '',
           'exCompAddress': external['exCompAddress'] ?? '',
           'exCompRegNo': external['exCompRegNo'] ?? '',
-          'exCompYear': external['exCompYear'] ?? '',
-          'exCompDesc': external['exCompDesc'] ?? '',
           'exJobTitle': external['exJobTitle'] ?? '',
-          'exJobDesc': external['exJobDesc'] ?? '',
-          'exJobAllowance': external['exJobAllowance'] ?? '',
           'exJobDuration': external['exJobDuration'] ?? '',
           'offerLetter': external['offerLetter'] ?? '',
           'studID': external['studID'] ?? '',
-          'tags': external['tags'] ?? [], 
           'exComIndustry': external['exComIndustry'] ?? '',
           'exJobType': external['exJobType'] ?? '',
           'externalStatus': external['externalStatus'] ?? '',
+          'placementContactName': external['placementContactName'] ?? '',
+          'placementContactEmail': external['placementContactEmail'] ?? '',
+          'placementContactNo': external['placementContactNo'] ?? '',
+          'placementContactJobTitle': external['placementContactJobTitle'] ?? '',
         });
       }
 
@@ -115,16 +114,19 @@ void initState() {
 
   Future<List<Map<String, dynamic>>> _getCompanyData() async {
     try {
-      QuerySnapshot companySnapshot = await FirebaseFirestore.instance.collection('Company').get();
+      QuerySnapshot companySnapshot = await FirebaseFirestore.instance
+          .collection('Company')
+          .where('approvalStatus', whereIn: ['Pending', 'Rejected'])
+          .get();
+
       List<Map<String, dynamic>> companies = companySnapshot.docs.map((doc) {
         return doc.data() as Map<String, dynamic>;
       }).toList();
 
-      // Fetch data for all companies with 'Pending' approval status concurrently
+      // Fetch data for all companies concurrently
       List<Future<Map<String, dynamic>?>> futures = companies.map((company) async {
-        var approval = company['approvalStatus'] ?? '';
-        if (approval == 'Pending') {
-          var userID = company['userID'];
+        var userID = company['userID'];
+        if (userID != null && userID.isNotEmpty) {
           var userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(userID).get();
           if (userSnapshot.exists) {
             var user = userSnapshot.data() as Map<String, dynamic>;
@@ -146,18 +148,18 @@ void initState() {
               'companyEmail': company['companyEmail'] ?? '',
               'logoURL': company['logoURL'] ?? '',
               'pContactJobTitle': company['pContactJobTitle'] ?? '',
-              'approvalStatus': approval,
+              'approvalStatus': company['approvalStatus'] ?? '',
             };
           }
         }
-        return null; // Return null for non-matching or incomplete data
+        return null; // Ignore invalid data
       }).toList();
 
-      // Wait for all the futures to complete
+      // Wait for all async operations to complete
       List<Map<String, dynamic>?> results = await Future.wait(futures);
 
-      // Remove null entries and return the result
-      return results.where((entry) => entry != null).cast<Map<String, dynamic>>().toList();
+      // Remove null entries and return the final list
+      return results.whereType<Map<String, dynamic>>().toList();
     } catch (e) {
       print('Error retrieving company data: $e');
       return [];
@@ -197,9 +199,10 @@ void initState() {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -241,31 +244,26 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns:  const [
+        DataColumn(label: Text('Student\nApply', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nName', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nAddress', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nReg No', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company\nYear', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company\nDesc', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nIndustry', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Title', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job Desc', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job\nAllowance', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job\nDuration', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Job Type', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement\nContact Name', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement\nContact Email', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement Contact\nContact No.', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Offer Letter', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Tags', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Student\nApply', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Status', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
-      source: ExternalData(data, context, rowEvenColor, rowOddColor), 
+      source: ExternalData(data, context, rowEvenColor, rowOddColor, _refreshData), 
     );
   }
 
@@ -285,9 +283,8 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
@@ -309,7 +306,7 @@ void initState() {
         DataColumn(label: Text('Approval\nStatus', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
-      source: CompanyData(data, context, rowEvenColor, rowOddColor),
+      source: CompanyData(data, context, rowEvenColor, rowOddColor, _refreshData),
     );
   }
 
@@ -353,7 +350,7 @@ void initState() {
                                   selectedStatus = newValue;
                                 });
                               },
-                              items: ["Pending", "Approved", "Rejected"]
+                              items: ["All", "Pending", "Approved", "Rejected"]
                                   .map((status) => DropdownMenuItem(
                                         value: status,
                                         child: Text(status),
@@ -408,7 +405,7 @@ void initState() {
                                     icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                                     dropdownColor: Colors.white,
                                     style: const TextStyle(color: Colors.black, fontSize: 14),
-                                    items: ["All", "Pending", "Approve", "Reject"]
+                                    items: ["All", "Pending", "Approved", "Rejected"]
                                         .map((status) => DropdownMenuItem(
                                               value: status,
                                               child: Text(status),
@@ -472,7 +469,7 @@ void initState() {
       length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.backgroundCream,
           title: const Text("Manage Application Page"),
           bottom:TabBar(
             tabs: tabs.map((tab) => Tab(text: tab)).toList(),
@@ -619,7 +616,7 @@ void initState() {
             ],
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.backgroundCream,
         body: Row(
           children: [
             Expanded(
@@ -654,8 +651,9 @@ class ExternalData extends DataTableSource {
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  ExternalData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  ExternalData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -668,94 +666,44 @@ class ExternalData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
+        DataCell(Text(item['studID'] ?? '')),
         DataCell(Text(item['exCompName'] ?? '')),
         DataCell(Text(item['exCompEmail'] ?? '')),
         DataCell(Text(item['exCompAddress'] ?? '')),
         DataCell(Text(item['exCompRegNo'] ?? '')),
-        DataCell(Text(item['exCompYear'].toString())),
-        DataCell(Text(item['exCompDesc'] ?? '')),
         DataCell(Text(item['exComIndustry'] ?? '')),
         DataCell(Text(item['exJobTitle'] ?? '')),
-        DataCell(Text(item['exJobDesc'] ?? '')),
-        DataCell(Text(item['exJobAllowance'].toString())),
         DataCell(Text(item['exJobDuration'].toString())),
-        DataCell(Text(item['exJobType'] ?? '')),
-        DataCell(Text(item['offerLetter'] ?? '')),       
-        DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
-        DataCell(Text(item['studID'] ?? '')),
-        DataCell(Text(item['externalStatus'] ?? '')),
+        DataCell(Text(item['placementContactName'] ?? '')),
+        DataCell(Text(item['placementContactEmail'] ?? '')),
+        DataCell(Text(item['placementContactContactNo'] ?? '')),
         DataCell(
-          Row(
-            children: [
-              if (item['externalStatus'] == 'Approve') ...[
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    final externalID = item['externalID'] ?? '';
-
-                    final confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Confirm Delete'),
-                        content: Text('Are you sure you want to delete external application $externalID?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
+          InkWell(
+            child: IconButton(
+              icon: const Icon(Icons.download, color: Colors.blue),
+              onPressed: () async {
+                final url = Uri.parse(item['offerLetter']);
+                try {
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open the document or No Document')),
                     );
-
-                    if (confirm == true) {
-                      await deleteUser(context, externalID);
-
-                      data.removeWhere((element) => element['externalID'] == externalID);
-                      notifyListeners();
-                    }
-                  },
-                ),
-              ] else if (item['externalStatus'] == 'Pending') ...[
-                IconButton(
-                  icon: const Icon(Icons.check, color: Colors.green),
-                  onPressed: () async {
-                    final externalID = item['externalID'] ?? '';
-
-                    final confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Approve User'),
-                        content: Text('Do you want to approve user $externalID?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Approve'),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirm == true) {
-                      await updateExternalStatus(context, externalID);
-                      notifyListeners();
-                    }
-                  },
-                ),
-              ],
-            ],
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+            ),
           ),
         ),
-    ]);
+        DataCell(Text(item['externalStatus'] ?? '')),
+      ],
+    );
   }
-  
 
   @override
   bool get isRowCountApproximate => false;
@@ -765,16 +713,16 @@ class ExternalData extends DataTableSource {
 
   @override
   int get selectedRowCount => 0;
-    
-  }
+}
 
 class CompanyData extends DataTableSource {
   final List<Map<String, dynamic>> data;
   final BuildContext context;
   final Color rowEvenColor;
   final Color rowOddColor;
+  final VoidCallback refreshCallback;
 
-  CompanyData(this.data, this.context, this.rowEvenColor, this.rowOddColor);
+  CompanyData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
 
   @override
   DataRow? getRow(int index) {
@@ -825,88 +773,116 @@ class CompanyData extends DataTableSource {
           ),
         ),
         DataCell(Text(item['approvalStatus'] ?? '')),
+        // Action buttons (Approve/Reject) only if not "Rejected"
         DataCell(
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.check, color: Colors.green),
-                onPressed: () async {
-                  final companyID = item['companyID'] ?? '';
+          item['approvalStatus'] == 'Rejected'
+              ? Container() // Empty container if status is "Rejected"
+              : Row(
+                  children: [
+                    // Approve Button
+                    IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      onPressed: () async {
+                        final companyID = item['companyID'] ?? '';
+                        final confirm = await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Approve Company'),
+                            content: Text('Do you want to approve company $companyID?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Approve'),
+                              ),
+                            ],
+                          ),
+                        );
 
-                  final confirm = await showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Approve User'),
-                      content: Text('Do you want to approve user $companyID?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Approve'),
-                        ),
-                      ],
+                        if (confirm == true) {
+                          await updateCompStatus(context, companyID, 'Approved');
+                          refreshCallback();
+                        }
+                      },
                     ),
-                  );
+                    // Reject Button
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: () async {
+                        final companyID = item['companyID'] ?? '';
+                        final confirm = await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Reject Company'),
+                            content: Text('Are you sure you want to reject company $companyID?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Reject'),
+                              ),
+                            ],
+                          ),
+                        );
 
-                  if (confirm == true) {
-                    await updateCompStatus(context, companyID);
-                    notifyListeners();
-                  }
-                },
-              ),
-            ],
-          ),
+                        if (confirm == true) {
+                          await updateCompStatus(context, companyID, 'Rejected');
+                          refreshCallback();
+                        }
+                      },
+                    ),
+                  ],
+                ),
         ),
-      ]);
-    }
-
-    @override
-    bool get isRowCountApproximate => false;
-
-    @override
-    int get rowCount => data.length;
-
-    @override
-    int get selectedRowCount => 0;
+      ],
+    );
   }
 
-  Future<void> updateCompStatus(BuildContext context, String companyID) async {
-    try {
-      var companyDoc = FirebaseFirestore.instance.collection('Company').doc(companyID);
+  @override
+  bool get isRowCountApproximate => false;
 
-      // Update the approveStatus field
-      await companyDoc.update({
-        'approvalStatus': 'Approve',
+  @override
+  int get rowCount => data.length;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+  // Function to update the approval status in Firestore
+  Future<void> updateCompStatus(BuildContext context, String companyID, String status) async {
+    try {
+      await FirebaseFirestore.instance.collection('Company').doc(companyID).update({
+        'approvalStatus': status,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User $companyID updated successfully!')),
+        SnackBar(content: Text('Company $companyID updated to $status successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating user: $e')),
+        SnackBar(content: Text('Error updating company status: $e')),
       );
     }
   }
 
-  Future<void> updateExternalStatus(BuildContext context, String externalID) async {
+  Future<void> updateExternalStatus(BuildContext context, String externalID, String status) async {
     try {
-      var externalDoc = FirebaseFirestore.instance.collection('External').doc(externalID);
-
-      // Update the approveStatus field
-      await externalDoc.update({
-        'externalStatus': 'Approve',
+      await FirebaseFirestore.instance.collection('External').doc(externalID).update({
+        'externalStatus': status,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User $externalID updated successfully!')),
+        SnackBar(content: Text('Application $externalID updated to $status successfully!')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating external application: $e')),
+        SnackBar(content: Text('Error updating external application status: $e')),
       );
     }
   }

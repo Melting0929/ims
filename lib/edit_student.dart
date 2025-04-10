@@ -3,6 +3,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'color.dart';
 
 class EditStudent extends StatefulWidget {
   final String userId;
@@ -41,6 +45,10 @@ class EditStudentTab extends State<EditStudent> {
   List<String> supervisorOptions = [];
   List<String> companyOptions = [];
 
+  String? currentFileUrl; 
+  PlatformFile? _selectedDocument;
+  String? _uploadedFileName;
+
   List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
                         'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
                         'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
@@ -75,6 +83,51 @@ class EditStudentTab extends State<EditStudent> {
     
   }
 
+    Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+      withData: true, 
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _selectedDocument = result.files.single;
+        _uploadedFileName = result.files.single.name;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No document selected.')),
+      );
+    }
+  }
+
+  Future<String?> _uploadDocument() async {
+    if (_selectedDocument == null) {
+      return currentFileUrl; 
+    }
+
+    try {
+      final fileName = _uploadedFileName ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final storageRef = FirebaseStorage.instance.ref().child('letters/$fileName');
+
+      String fileExtension = fileName.split('.').last.toLowerCase();
+      String contentType = 'application/octet-stream';
+      if (fileExtension == 'pdf') contentType = 'application/pdf';
+      if (fileExtension == 'doc') contentType = 'application/msword';
+      if (fileExtension == 'docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      final metadata = SettableMetadata(contentType: contentType);
+      final uploadTask = storageRef.putData(_selectedDocument!.bytes!, metadata);
+
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      debugPrint("Failed to upload document: $e");
+      return null;
+    }
+  }
+  
   Future<void> fetchSupervisorList() async {
     try {
       if (studentDept != 'No department') {
@@ -297,6 +350,7 @@ class EditStudentTab extends State<EditStudent> {
             companyID = studentDoc['companyID'] ?? 'No working company';
             supervisorID = studentDoc['supervisorID'] ?? 'No supervisor';
             skill = List<String>.from(studentDoc['skill'] ?? []);
+            currentFileUrl = studentDoc['letterURL'];
           } else {
             studentID = 'No Student ID';
             studentDept = 'No department';
@@ -309,7 +363,7 @@ class EditStudentTab extends State<EditStudent> {
         });
 
         // Fetch company name
-        if (companyID != 'No working company') {
+        if (companyID != null) {
           var companyDoc = await FirebaseFirestore.instance
               .collection('Company')
               .doc(companyID)
@@ -323,7 +377,7 @@ class EditStudentTab extends State<EditStudent> {
         }
 
         // Fetch supervisor name
-        if (supervisorID != 'No supervisor') {
+        if (supervisorID != null) {
           var supervisorDoc = await FirebaseFirestore.instance
               .collection('Supervisor')
               .doc(supervisorID)
@@ -707,6 +761,40 @@ class EditStudentTab extends State<EditStudent> {
                                     return null;
                                   },
                                 ),
+                                const SizedBox(height: 10.0),
+                                const Text("Letter Document:"),
+                                const SizedBox(height: 5.0),
+                                if (currentFileUrl != null)
+                                  GestureDetector(
+                                    onTap: () async {
+                                      if (currentFileUrl != null && await canLaunchUrl(Uri.parse(currentFileUrl!))) {
+                                        await launchUrl(Uri.parse(currentFileUrl!));
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Cannot open the file URL.')),
+                                        );
+                                      }
+                                    },
+                                    child: const Text(
+                                      'View Current File',
+                                      style: TextStyle(
+                                        color: Color.fromARGB(255, 14, 118, 203),
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: Color.fromARGB(255, 14, 118, 203),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 10.0),
+                                ElevatedButton.icon(
+                                  onPressed: _pickDocument,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.backgroundCream,
+                                    foregroundColor: Colors.white,
+                                    elevation: 2,
+                                  ),
+                                  icon: const Icon(Icons.upload_file, color: Colors.black),
+                                  label: Text(_uploadedFileName ?? 'Upload New Document', style: const TextStyle(color: Colors.black)),
+                                ),
                                 const SizedBox(height: 16),
                                 // Company Field
                                 DropdownButtonFormField<String>(
@@ -749,6 +837,9 @@ class EditStudentTab extends State<EditStudent> {
                                             String updatedEmail = studentEmailController.text;
                                             String? updatedPhone = studentContactNoController.text.isEmpty ? null : studentContactNoController.text;
                                             String updatedPassword = studentPasswordController.text;
+                                            String updatedstudentID = studentIDController.text;
+
+                                            String? newFileUrl = await _uploadDocument();
 
                                             // Update Firestore data
                                             try {
@@ -793,6 +884,13 @@ class EditStudentTab extends State<EditStudent> {
                                                 }
                                               }
 
+                                              if (_selectedDocument != null && currentFileUrl != null) {
+                                                  // Delete old document only if a new document was uploaded
+                                                  final oldFileRef = FirebaseStorage.instance.refFromURL(currentFileUrl!);
+                                                  await oldFileRef.delete();
+                                                  debugPrint("Old document deleted.");
+                                                }
+
                                               var updatedUserData = {
                                                 'name': updatedName,
                                                 'email': updatedEmail,
@@ -801,7 +899,7 @@ class EditStudentTab extends State<EditStudent> {
                                               };
 
                                               var updatedStudentData = {
-                                                'studID': studentID,
+                                                'studID': updatedstudentID,
                                                 'dept': studentDept,
                                                 'studProgram': studentProgram,
                                                 'specialization': studentSpecialization,
@@ -809,6 +907,7 @@ class EditStudentTab extends State<EditStudent> {
                                                 'companyID': companyId,
                                                 'supervisorID': supervisorId,
                                                 'skill': skill,
+                                                'letterURL': newFileUrl,
                                               };
 
                                               await FirebaseFirestore.instance
@@ -824,10 +923,10 @@ class EditStudentTab extends State<EditStudent> {
                                               for (QueryDocumentSnapshot doc in studentSnapshot.docs) {
                                                 await doc.reference.update(updatedStudentData);
                                               }
-
-                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
                                               widget.refreshCallback();
                                               Navigator.of(context).pop(true);
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
+                                              
                                             } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update profile')));
                                               debugPrint("Error updating profile: $e");

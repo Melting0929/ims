@@ -14,7 +14,6 @@ import 'login_web.dart';
 import 'eprofile_admin.dart';
 import 'color.dart';
 
-
 class UploadGuideline extends StatefulWidget {
   final String userId;
   const UploadGuideline ({super.key, required this.userId});
@@ -168,13 +167,11 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
-        DataColumn(label: Text('Guideline ID', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline Title', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline Description', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline URL', style: TextStyle(color: Colors.white))),
@@ -207,249 +204,275 @@ void initState() {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Upload Guideline Page"),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
+        ),
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Upload Guideline"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            adminName,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            adminEmail,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EprofileAdmin(userId: widget.userId),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Drawer Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: [
+                    buildDrawerItem(
+                      icon: Icons.dashboard,
+                      title: "Dashboard",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => AdminDashboard(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.people,
+                      title: "Manage User Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageUser(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.work,
+                      title: "Manage Job Posting Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageJob(userId: widget.userId)),
+                      ),
+                    ),
+                    buildDrawerItem(
+                      icon: Icons.upload_file,
+                      title: "Upload Document Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => UploadGuideline(userId: widget.userId)),
+                      ),
+                    ),buildDrawerItem(
+                      icon: Icons.manage_accounts,
+                      title: "Manage Application Page",
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => ManageApplication(userId: widget.userId)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+
+              // Footer Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Admin Panel v1.0",
+                  style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(
-                          adminName,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        ElevatedButton.icon(
+                          onPressed: _refreshData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          label: const Text("Refresh"),
                         ),
-                        Text(
-                          adminEmail,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddGuideline(refreshCallback: _refreshData),
+                              ),
+                            );
+                            if (result == true) {
+                              _refreshData(); // Refresh data when returning from the update page
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.secondaryYellow,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          icon: const Icon(Icons.assignment_add, color: Colors.black),
+                          label: const Text("Add Guideline", style: TextStyle(color: Colors.black)),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EprofileAdmin(userId: widget.userId),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          "Access Type:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
-                      );
-                    },
+                        const SizedBox(width: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 1.5),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedAccessType,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(color: Colors.black, fontSize: 14),
+                              items: accessTypes.map((type) {
+                                return DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedAccessType = value!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                          color: Colors.black.withAlpha((0.15 * 255).toInt()), // Convert opacity to alpha value
+                          blurRadius: 8,  // More blur for smooth effect
+                          spreadRadius: 2,
+                          offset: const Offset(0, 6), // Subtle elevation effect
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(20.0),
+                      child: _buildFutureTable(
+                        future: _getDocData(),
+                        builder: _buildTable,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Drawer Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: [
-                  buildDrawerItem(
-                    icon: Icons.dashboard,
-                    title: "Dashboard",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => AdminDashboard(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.people,
-                    title: "Manage User Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageUser(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.work,
-                    title: "Manage Job Posting Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageJob(userId: widget.userId)),
-                    ),
-                  ),
-                  buildDrawerItem(
-                    icon: Icons.upload_file,
-                    title: "Upload Document Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => UploadGuideline(userId: widget.userId)),
-                    ),
-                  ),buildDrawerItem(
-                    icon: Icons.manage_accounts,
-                    title: "Manage Application Page",
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => ManageApplication(userId: widget.userId)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-            // Footer Section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Admin Panel v1.0",
-                style: TextStyle(color: Colors.blueGrey[600], fontSize: 12),
               ),
             ),
           ],
         ),
-      ),
-      backgroundColor: Colors.white,
-      body: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _refreshData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text("Refresh"),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddGuideline(refreshCallback: _refreshData),
-                            ),
-                          );
-                          if (result == true) {
-                            _refreshData(); // Refresh data when returning from the update page
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondaryYellow,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                        ),
-                        icon: const Icon(Icons.assignment_add, color: Colors.black),
-                        label: const Text("Add Guideline", style: TextStyle(color: Colors.black)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text(
-                        "Access Type:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedAccessType,
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: accessTypes.map((type) {
-                              return DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedAccessType = value!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: _buildFutureTable(
-                    future: _getDocData(),
-                    builder: _buildTable,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -475,7 +498,6 @@ class GuidelineData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['docID'] ?? '')),
         DataCell(Text(item['title'] ?? '')),
         DataCell(Text(item['desc'] ?? '')),
         DataCell(
@@ -489,7 +511,7 @@ class GuidelineData extends DataTableSource {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Could not open the document')),
+                      const SnackBar(content: Text('Could not open the document or No Document')),
                     );
                   }
                 } catch (e) {

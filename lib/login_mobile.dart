@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'mobile_start.dart';
+import 'student_dashboard.dart';
+import 'color.dart';
 
 class LoginTab extends StatefulWidget {
   final int? userId;
@@ -57,14 +58,13 @@ class _LoginTabState extends State<LoginTab> {
         // Check if a user was found
         if (userQuerySnapshot.docs.isNotEmpty) {
           var userDoc = userQuerySnapshot.docs.first;
-          int retrievedUserId = userDoc['userID'];
 
           // Check if the widget is still mounted before navigating
           if (mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => MainTab(userId: retrievedUserId), // Replace with your next screen
+                builder: (context) => StudentDashboard(userId: userDoc.id), // Replace with your next screen
               ),
             );
           }
@@ -78,98 +78,106 @@ class _LoginTabState extends State<LoginTab> {
 
     return Scaffold(
       body: Container(
-        color: const Color(0xFFE9C46A),
+        color: AppColors.backgroundCream,
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Form(
-              key: formKey,
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 10,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.account_circle,
-                        size: 100.0,
-                      ),
-                      const SizedBox(height: 20.0),
-                      TextFormField(
-                        controller: usernameController,
-                        decoration: InputDecoration(
-                          labelText: 'Student Email',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+          child: SingleChildScrollView( // <-- Wrap in scroll view
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 500,
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 10,
+                    child: Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const Icon(
+                            Icons.account_circle,
+                            size: 100.0,
                           ),
-                          prefixIcon: const Icon(Icons.email),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your student email';
-                          }
-                          if (!userEmailRegExp.hasMatch(value)) {
-                            return 'Please enter a valid student email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10.0),
-                      TextFormField(
-                        controller: passwordController,
-                        obscureText: !_isPasswordVisible, // Use the boolean to toggle visibility
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off, // Change the icon based on visibility
+                          const SizedBox(height: 20.0),
+                          TextFormField(
+                            controller: usernameController,
+                            decoration: InputDecoration(
+                              labelText: 'Student Email',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.email),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible; // Toggle visibility
-                              });
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your student email';
+                              }
+                              if (!userEmailRegExp.hasMatch(value)) {
+                                return 'Please enter a valid student email';
+                              }
+                              return null;
                             },
                           ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
-                          }
-                          if (!passwordRegExp.hasMatch(value)) {
-                            return 'Password must contain at least 8 characters including uppercase, lowercase, and numbers';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20.0),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 10.0),
+                          TextFormField(
+                            controller: passwordController,
+                            obscureText: !_isPasswordVisible,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a password';
+                              }
+                              if (!passwordRegExp.hasMatch(value)) {
+                                return 'Password must contain at least 8 characters including uppercase, lowercase, and numbers';
+                              }
+                              return null;
+                            },
                           ),
-                          backgroundColor: Colors.black,
-                        ),
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            String email = usernameController.text;
-                            String password = passwordController.text;
-                            await loginWithFirestore(email, password);
-                          }
-                        },
-                        child: const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
+                          const SizedBox(height: 20.0),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.black,
+                            ),
+                            onPressed: () async {
+                              if (formKey.currentState!.validate()) {
+                                String email = usernameController.text;
+                                String password = passwordController.text;
+                                await loginWithFirestore(email, password);
+                              }
+                            },
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(fontSize: 18, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -180,3 +188,4 @@ class _LoginTabState extends State<LoginTab> {
     );
   }
 }
+

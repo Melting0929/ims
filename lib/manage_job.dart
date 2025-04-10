@@ -1,4 +1,5 @@
 import 'package:data_table_2/data_table_2.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,11 +9,10 @@ import 'admin_dashboard.dart';
 import 'manage_application.dart';
 import 'manage_user.dart';
 import 'upload_guideline.dart';
-import 'add_job.dart';
+//import 'add_job.dart';
 import 'edit_job.dart';
 import 'color.dart';
 
-// Dropdown Menu
 class ManageJob extends StatefulWidget {
   final String userId;
   const ManageJob({super.key, required this.userId});
@@ -32,14 +32,13 @@ class ManageJobTab extends State<ManageJob> {
 
   List<Map<String, dynamic>> externalData = [];
   List<Map<String, dynamic>> registeredData = [];
-  List<String> jobExternalTitles = [];
+  
   List<String> jobRegisterTitles = [];
-  List<String> comExternalTitles = [];
+  List<String> studentLists = [];
   List<String> comRegisterTitles = [];
 
-  String selectedEJobTitle = 'All';
-  String selectedEJobStatus = 'All';
-  String selectedExternal = 'All';
+  String selectedApproval = 'All';
+  String selectedIDs = 'All';
 
   String selectedRJobTitle = 'All';
   String selectedRJobStatus = 'All';
@@ -51,6 +50,7 @@ void initState() {
   fetchAdminDetails().then((_) {
     fetchJobTitles();
     fetchCompanyNames();
+    fetchStudentIDs();
   });
 }
 
@@ -116,9 +116,10 @@ void initState() {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
+        (Route<dynamic> route) => false, // removes all previous routes
       );
     }
   }
@@ -144,18 +145,6 @@ void initState() {
   }
 
   Future<void> fetchJobTitles() async {
-    QuerySnapshot exjobSnapshot = await FirebaseFirestore.instance
-        .collection('Job')
-        .where('jobType', isEqualTo: 'External')
-        .get();
-    setState(() {
-      jobExternalTitles = exjobSnapshot.docs
-          .map((doc) => doc['jobTitle'] as String)
-          .toSet()
-          .toList();
-      jobExternalTitles.insert(0, 'All');
-    });
-
     QuerySnapshot rejobSnapshot = await FirebaseFirestore.instance
         .collection('Job')
         .where('jobType', isEqualTo: 'Registered')
@@ -170,18 +159,6 @@ void initState() {
   }
 
   Future<void> fetchCompanyNames() async {
-    QuerySnapshot excompanySnapshot = await FirebaseFirestore.instance
-        .collection('Company')
-        .where('companyType', isEqualTo: 'External')
-        .get();
-    setState(() {
-      comExternalTitles = excompanySnapshot.docs
-          .map((doc) => doc['companyName'] as String)
-          .toSet()
-          .toList();
-      comExternalTitles.insert(0, 'All');
-    });
-
     QuerySnapshot recompanySnapshot = await FirebaseFirestore.instance
         .collection('Company')
         .where('companyType', isEqualTo: 'Registered')
@@ -195,15 +172,28 @@ void initState() {
     });
   }
   
+  Future<void> fetchStudentIDs() async {
+    QuerySnapshot recompanySnapshot = await FirebaseFirestore.instance
+        .collection('Student')
+        .get();
+    setState(() {
+      studentLists = recompanySnapshot.docs
+          .map((doc) => doc['studID'] as String)
+          .toSet()
+          .toList();
+      studentLists.insert(0, 'All');
+    });
+  }
+
   Future<List<Map<String, dynamic>>> _getExternalData() async {
     try {
-      QuerySnapshot jobSnapshot = await FirebaseFirestore.instance
-          .collection('Job')
-          .where('jobType', isEqualTo: 'External')
-          .get();
-      List<Map<String, dynamic>> externals = jobSnapshot.docs.map((doc) {
+      QuerySnapshot externalSnapshot = await FirebaseFirestore.instance
+      .collection('External')
+      .get();
+
+      List<Map<String, dynamic>> externals = externalSnapshot.docs.map((doc) {
         return {
-          'jobID': doc.id,
+          'externalID': doc.id,
           ...doc.data() as Map<String, dynamic>
         };
       }).toList();
@@ -211,56 +201,34 @@ void initState() {
       List<Map<String, dynamic>> retrieveExternalData = [];
 
       for (var external in externals) {
-        var jobID = external['jobID'];
-        var userID = external['userID'];
-        var companyID = external['companyID'];
+          Map<String, dynamic> externalData = {
+            'studID': external['studID'] ?? '',
+            'externalID': external['externalID'] ?? '',
+            'exCompName': external['exCompName'] ?? '',
+            'exCompEmail': external['exCompEmail'] ?? '',
+            'exCompAddress': external['exCompAddress'] ?? '',
+            'exCompRegNo': external['exCompRegNo'] ?? '',
+            'exCompYear': external['exCompYear'] ?? '',
+            'exJobTitle': external['exJobTitle'] ?? '',
+            'exJobDuration': external['exJobDuration'] ?? '',
+            'offerLetter': external['offerLetter'] ?? '',
+            'exComIndustry': external['exComIndustry'],
+            'externalStatus': external['externalStatus'] ?? '',
+            'placementContactName': external['placementContactName'] ?? '',
+            'placementContactEmail': external['placementContactEmail'] ?? '',
+            'placementContactNo': external['placementContactNo'] ?? '',
+            'placementContactJobTitle': external['placementContactJobTitle'] ?? '',
+          };
 
-        var userSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(userID)
-            .get();
-        if (!userSnapshot.exists) {
-          print('User not found: $userID');
-          continue;
-        }
-        var user = userSnapshot.data() as Map<String, dynamic>;
-        var name = user['name'];
-
-        var excompanySnapshot = await FirebaseFirestore.instance
-            .collection('Company')
-            .doc(companyID)
-            .get();
-        if (!excompanySnapshot.exists) {
-          print('Company not found: $companyID');
-          continue;
-        }
-        var company = excompanySnapshot.data() as Map<String, dynamic>;
-        var companyName = company['companyName'];
-
-        Map<String, dynamic> externalData = {
-          'jobID': jobID,
-          'jobTitle': external['jobTitle'] ?? '',
-          'jobDesc': external['jobDesc'] ?? '',
-          'jobAllowance': external['jobAllowance'] ?? '',
-          'jobDuration': external['jobDuration'] ?? '',
-          'jobStatus': external['jobStatus'] ?? '',
-          'numApplicant': external['numApplicant'] ?? '',
-          'userID': userID,
-          'companyName': companyName,
-          'name': name,
-          'tags': external['tags'] ?? [], 
-        };
-
-        if ((selectedEJobTitle == 'All' || externalData['jobTitle'] == selectedEJobTitle) && 
-            (selectedEJobStatus == 'All' || externalData['jobStatus'] == selectedEJobStatus) &&
-            (selectedExternal == 'All' || externalData['companyName'] == selectedExternal)) {
-          retrieveExternalData.add(externalData); 
+          if ((selectedApproval == 'All' || externalData['externalStatus'] == selectedApproval) &&
+              (selectedIDs == 'All' || externalData['studID'] == selectedIDs)) {
+          retrieveExternalData.add(externalData);
         }
       }
 
       return retrieveExternalData;
     } catch (e) {
-      print('Error retrieving external job data: $e');
+      print('Error retrieving external data: $e');
       return [];
     }
   }
@@ -314,7 +282,7 @@ void initState() {
           'jobAllowance': register['jobAllowance'] ?? '',
           'jobDuration': register['jobDuration'] ?? '',
           'jobStatus': register['jobStatus'] ?? '',
-          'numApplicant': register['numApplicant'] ?? '',
+          'location': register['location'] ?? '',
           'userID': userID,
           'name': name,
           'companyName': companyName,
@@ -334,7 +302,7 @@ void initState() {
     }
   }
 
-  Widget _buildTable(List<Map<String, dynamic>> data) {
+  Widget _buildRegisteredTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
       dataRowHeight: 70,
@@ -349,9 +317,8 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 5,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns:  const [
@@ -361,13 +328,49 @@ void initState() {
         DataColumn(label: Text('Job Allowance', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Duration', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Status', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Number of\nApplicant Needed', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Location', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Tags', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('User Created', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
       ],
       source: JobData(data, context, rowEvenColor, rowOddColor, _refreshData), 
+    );
+  }
+
+  Widget _buildExternalTable(List<Map<String, dynamic>> data) {
+    return PaginatedDataTable2(
+      columnSpacing: 16,
+      dataRowHeight: 70,
+      minWidth: 1300,
+      dividerThickness: 1.5,
+      horizontalMargin: 16,
+      headingTextStyle: Theme.of(context).textTheme.titleSmall,
+      headingRowDecoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+        color: headingRowColor,
+      ),
+      rowsPerPage: 5,
+      showFirstLastButtons: true,
+      renderEmptyRowsInTheEnd: true,
+
+      columns:  const [
+        DataColumn(label: Text('Student\nApply', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company\nName', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company\nReg No', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Job Title', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Job\nDuration', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement\nContact Name', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement\nContact Email', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Placement Contact\nContact No.', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Offer Letter', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Status', style: TextStyle(color: Colors.white))),
+      ],
+      source: ExternalData(data, context, rowEvenColor, rowOddColor, _refreshData), 
     );
   }
 
@@ -438,7 +441,7 @@ void initState() {
                                   icon: const Icon(Icons.refresh, color: Colors.white),
                                   label: const Text("Refresh"),
                                 ),
-                                if (showAddButton) ...[
+                                /*if (showAddButton) ...[
                                 const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: onAdd,
@@ -450,7 +453,7 @@ void initState() {
                                   icon: const Icon(Icons.assignment_add, color: Colors.black),
                                   label: const Text("Add Job", style: TextStyle(color: Colors.black)),
                                 ),
-                              ],
+                              ],*/
                             ],
                           ),
                         ],
@@ -476,7 +479,7 @@ void initState() {
                                   icon: const Icon(Icons.refresh, color: Colors.white),
                                   label: const Text("Refresh"),
                                 ),
-                                if (showAddButton) ...[
+                                /*if (showAddButton) ...[
                                 const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: onAdd,
@@ -488,7 +491,7 @@ void initState() {
                                   icon: const Icon(Icons.assignment_add, color: Colors.black),
                                   label: const Text("Add Job", style: TextStyle(color: Colors.black)),
                                 ),
-                              ],
+                              ],*/
                             ],
                           ),
                         ],
@@ -515,7 +518,7 @@ void initState() {
     );
   }
 
-  Future<void> _navigateToAddJob(BuildContext context) async {
+  /*Future<void> _navigateToAddJob(BuildContext context) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -526,8 +529,7 @@ void initState() {
     if (result == true) {
       _refreshData(); // Refresh data when returning from the update page
     }
-  }
-
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -535,7 +537,7 @@ void initState() {
       length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.backgroundCream,
           title: const Text("Manage Job Posting Page"),
           bottom:TabBar(
             tabs: tabs.map((tab) => Tab(text: tab)).toList(),
@@ -682,7 +684,7 @@ void initState() {
             ],
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.backgroundCream,
         body: Row(
           children: [
             Expanded(
@@ -690,13 +692,13 @@ void initState() {
                 children: [
                    _buildTab(
                     title: "Manage External Jobs",
-                    onAdd: () => _navigateToAddJob(context),
+                    onAdd: () {},
                     onRefresh: _refreshData,
                     future: _getExternalData(),
-                    builder: _buildTable,
+                    builder: _buildExternalTable,
                     dropdowns: [
                       const Text(
-                        "Company Name:",
+                        "Student ID:",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(width: 10),
@@ -709,16 +711,16 @@ void initState() {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: selectedExternal,
+                            value: selectedIDs,
                             onChanged: (value) {
                               setState(() {
-                                selectedExternal = value!;
+                                selectedIDs = value!;
                               });
                             },
                             icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                             dropdownColor: Colors.white,
                             style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: comExternalTitles.map((title) {
+                            items: studentLists.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
                                 child: Text(title),
@@ -729,7 +731,7 @@ void initState() {
                       ),
                       const SizedBox(width: 16),
                       const Text(
-                        "Job Titles:",
+                        "Approval:",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(width: 10),
@@ -742,54 +744,21 @@ void initState() {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: selectedEJobTitle,
+                            value: selectedApproval,
                             onChanged: (value) {
                               setState(() {
-                                selectedEJobTitle = value!;
+                                selectedApproval = value!;
                               });
                             },
                             icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                             dropdownColor: Colors.white,
                             style: const TextStyle(color: Colors.black, fontSize: 14),
-                            items: jobExternalTitles.map((title) {
+                            items: ['All', 'Approved', 'Pending', 'Rejected'].map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
                                 child: Text(title),
                               );
                             }).toList(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Text(
-                        "Job Status:",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedEJobStatus,
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedEJobStatus = newValue!;
-                              });
-                            },
-                            items: ["All", "Accepting", "Closed"].map((status) {
-                              return DropdownMenuItem(
-                                value: status,
-                                child: Text(status),
-                              );
-                            }).toList(),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: Colors.black, fontSize: 14),
                           ),
                         ),
                       ),
@@ -800,7 +769,7 @@ void initState() {
                     onAdd: () {},
                     onRefresh: _refreshData,
                     future: _getRegisteredData(),
-                    builder: _buildTable,
+                    builder: _buildRegisteredTable,
                     dropdowns: [
                       const Text(
                         "Company Name:",
@@ -913,6 +882,73 @@ void initState() {
   }
 }
 
+class ExternalData extends DataTableSource {
+  final List<Map<String, dynamic>> data;
+  final BuildContext context;
+  final Color rowEvenColor;
+  final Color rowOddColor;
+  final VoidCallback refreshCallback;
+
+  ExternalData(this.data, this.context, this.rowEvenColor, this.rowOddColor, this.refreshCallback);
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= data.length) return null;
+    final item = data[index];
+    final isEven = index % 2 == 0;
+
+    return DataRow(
+      color: WidgetStateProperty.resolveWith(
+        (states) => isEven ? rowEvenColor : rowOddColor,
+      ),
+      cells: [
+        DataCell(Text(item['studID'] ?? '')),
+        DataCell(Text(item['exCompName'] ?? '')),
+        DataCell(Text(item['exCompEmail'] ?? '')),
+        DataCell(Text(item['exCompRegNo'] ?? '')),
+        DataCell(Text(item['exJobTitle'] ?? '')),
+        DataCell(Text(item['exJobDuration']?.toString() ?? '')),
+        DataCell(Text(item['placementContactName'] ?? '')),
+        DataCell(Text(item['placementContactEmail'] ?? '')),
+        DataCell(Text(item['placementContactContactNo'] ?? '')),
+        DataCell(
+          InkWell(
+            child: IconButton(
+              icon: const Icon(Icons.download, color: Colors.blue),
+              onPressed: () async {
+                final url = Uri.parse(item['offerLetter']);
+                try {
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not open the document or No Document')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+            ),
+          ),
+        ), 
+        DataCell(Text(item['externalStatus'] ?? '')),
+      ],
+    );
+  }
+  
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => data.length;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
 class JobData extends DataTableSource {
   final List<Map<String, dynamic>> data;
   final BuildContext context;
@@ -940,7 +976,7 @@ class JobData extends DataTableSource {
         DataCell(Text(item['jobAllowance'].toString())),
         DataCell(Text(item['jobDuration'].toString())),
         DataCell(Text(item['jobStatus'] ?? '')),
-        DataCell(Text(item['numApplicant'].toString())),
+        DataCell(Text(item['location'])),
         DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
         DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['name'] ?? '')),
@@ -1009,19 +1045,19 @@ class JobData extends DataTableSource {
     
   }
 
-Future<void> deleteJob(BuildContext context, String jobID) async {
-  try {
-    await FirebaseFirestore.instance
-        .collection('Job')
-        .doc(jobID)
-        .delete();
+  Future<void> deleteJob(BuildContext context, String jobID) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('Job')
+          .doc(jobID)
+          .delete();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Job $jobID deleted successfully!')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error deleting job: $e')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Job $jobID deleted successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting job: $e')),
+      );
+    }
   }
-}

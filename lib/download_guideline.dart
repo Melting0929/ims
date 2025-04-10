@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_web.dart';
+import 'login_mobile.dart';
 import 'company_dashboard.dart';
 import 'student_dashboard.dart';
 import 'supervisor_dashboard.dart';
+import 'internship_recommend.dart';
+import 'assessment.dart';
 import 'manage_cjob.dart';
 import 'manage_applicant.dart';
 import 'manage_assessment.dart';
@@ -16,7 +19,6 @@ import 'eprofile_supervisor.dart';
 import 'eprofile_company.dart';
 import 'color.dart';
 
-// Check Drawer
 class DownloadGuideline extends StatefulWidget {
   final String userId;
   const DownloadGuideline ({super.key, required this.userId});
@@ -44,6 +46,10 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
     fetchUserDetails();
   }
 
+  bool isMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600;
+  }
+
   Future<void> fetchUserDetails() async {
     try {
       var userDoc = await FirebaseFirestore.instance
@@ -64,13 +70,15 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
   }
 
   Future<List<Map<String, dynamic>>> _getDocData() async {
+    List<Map<String, dynamic>> combinedDocs = [];
+
     try {
+      // Step 1: Fetch guideline documents
       QuerySnapshot docSnapshot = await FirebaseFirestore.instance
-      .collection('Guideline')
-      .where('accessType', isEqualTo: userType)
-      .get();
-      
-      // Combine document data with the document ID
+          .collection('Guideline')
+          .where('accessType', isEqualTo: userType)
+          .get();
+
       List<Map<String, dynamic>> guidelines = docSnapshot.docs.map((doc) {
         return {
           'docID': doc.id,
@@ -80,11 +88,32 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
         };
       }).toList();
 
-      return guidelines;
+      combinedDocs.addAll(guidelines);
+
+      // Step 2: Fetch internship letter from Student collection
+      QuerySnapshot studentQuery = await FirebaseFirestore.instance
+          .collection('Student')
+          .where('userID', isEqualTo: widget.userId)
+          .get();
+
+      if (studentQuery.docs.isNotEmpty) {
+        final studentData = studentQuery.docs.first.data() as Map<String, dynamic>;
+        final letterURL = studentData['letterURL']?.toString() ?? '';
+
+        if (letterURL.isNotEmpty) {
+          combinedDocs.add({
+            'docID': 'internshipLetter',
+            'title': 'Internship Letter',
+            'guidelineURL': letterURL,
+            'desc': 'This is your official internship confirmation letter.',
+          });
+        }
+      }
+      
     } catch (e) {
-      print('Error retrieving guideline data: $e');
-      return [];
+      print('Error retrieving documents: $e');
     }
+    return combinedDocs;
   }
 
   Future<void> logout() async {
@@ -120,10 +149,20 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
 
     if (confirmLogout) {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginWeb()),
-      );
+
+      // Redirect based on platform
+      if (isMobile(context)) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginTab()),
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginWeb()),
+          (Route<dynamic> route) => false,
+        );
+      }
     }
   }
 
@@ -158,6 +197,22 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
             onTap: () => Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => StudentDashboard(userId: widget.userId)),
+            ),
+          ),
+          buildDrawerItem(
+            icon: Icons.upload_file,
+            title: "Internship Recommendation Page",
+            onTap: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => InternshipRecommend(userId: widget.userId)),
+            ),
+          ),
+          buildDrawerItem(
+            icon: Icons.upload_file,
+            title: "Assessment Page",
+            onTap: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => Assessment(userId: widget.userId)),
             ),
           ),
           buildDrawerItem(
@@ -305,8 +360,8 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
   Widget _buildTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 70,
-      minWidth: 1200,
+      dataRowHeight: 80,
+      minWidth: 200,
       dividerThickness: 1.5,
       horizontalMargin: 16,
       headingTextStyle: Theme.of(context).textTheme.titleSmall,
@@ -317,13 +372,11 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 6,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
-        DataColumn(label: Text('Guideline ID', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline Title', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline Description', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Guideline URL', style: TextStyle(color: Colors.white))),
@@ -354,111 +407,124 @@ class DownloadGuidelineTab extends State<DownloadGuideline> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Download Guideline Page"),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.6, 1.0],
+        ),
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // User Info Section
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Makes gradient visible
+        appBar: AppBar(
+          title: const Text("Download Document"),
+          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
+          elevation: 0, // Removes the shadow
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // User Info Section
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.backgroundCream, AppColors.secondaryYellow],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            email,
+                            style: const TextStyle(
+                              color: Color.fromARGB(255, 42, 42, 42),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _navigateToEditProfile(context, userType),
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.account_circle, size: 40, color: AppColors.deepYellow),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          email,
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 42, 42, 42),
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+
+              const SizedBox(height: 10),
+              const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
+
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: getDrawerItems(context, userType),
+                ),
+              ),
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ElevatedButton.icon(
+                  onPressed: logout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text("Logout", style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 40),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _navigateToEditProfile(context, userType),
+                ),
+              ),
+
+              footerText(userType),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: _buildFutureTable(
+                      future: _getDocData(),
+                      builder: _buildTable,
+                    ),
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 10),
-            const Divider(height: 1, thickness: 1, color: AppColors.secondaryYellow),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: getDrawerItems(context, userType),
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: ElevatedButton.icon(
-                onPressed: logout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text("Logout", style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-
-            footerText(userType),
           ],
         ),
-      ),
-      body: Row(
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: _buildFutureTable(
-                    future: _getDocData(),
-                    builder: _buildTable,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -483,7 +549,6 @@ class GuidelineData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['docID'] ?? '')),
         DataCell(Text(item['title'] ?? '')),
         DataCell(Text(item['desc'] ?? '')),
         DataCell(
