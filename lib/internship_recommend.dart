@@ -144,30 +144,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
       },
     );
   }
-  
-  /*Future<String> downloadPDF(String fileURL) async {
-    try {
-      // Create a storage reference from our app
-      final storageRef = FirebaseStorage.instance.ref();
-
-      String extractFilePath(String firebaseUrl) {
-        Uri uri = Uri.parse(firebaseUrl);
-        String path = uri.pathSegments.last.split('?').first; // Extracts after "/o/"
-        return Uri.decodeComponent(path); // Decode %2F to /
-      }
-
-      String filePath = extractFilePath(fileURL);
-
-      final pathReference = storageRef.child(filePath);
-      print(pathReference);
-      final pdfDownloadURL = await pathReference.getDownloadURL();
-
-      return pdfDownloadURL;
-    } catch (e) {
-      throw Exception("Failed to download PDF: $e");
-    }
-  }*/
-    
+      
   Future<String> extractTextFromPDF(String pdfUrl) async {
     try {
       // Fetch the PDF bytes using HTTP
@@ -201,14 +178,11 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         throw Exception("Resume URL not found.");
       }
 
-      // 2. Download PDF from Firebase Storage
-      // String filePath = await downloadPDF(resumeURL);
-
-      // 3. Extract text from PDF
+      // 2. Extract text from PDF
       extractedText = await extractTextFromPDF(resumeURL);
       setState(() {});
 
-      // 4. Send extracted text to AI Cloud Function
+      // 3. Send extracted text to AI Cloud Function
       await fetchRecommendedJobs(extractedText);
     } catch (e) {
       print("Error: $e");
@@ -226,15 +200,23 @@ class InternshipRecommendState extends State<InternshipRecommend> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         List<Map<String, dynamic>> aiRecommendations = List<Map<String, dynamic>>.from(data["recommended_jobs"]);
-        
-        if (aiRecommendations.isEmpty) {
-          // If AI returns no results, use fallback method
-          await localMatchJobs();
-        } else {
-          setState(() {
-            recommendedJobs = aiRecommendations.map((job) => job["jobID"].toString()).toList();
-          });
-        }
+
+        List<String> recommendedIDs = aiRecommendations.map((job) => job["jobID"].toString()).toList();
+
+        // Get all other jobs not in recommendations
+        QuerySnapshot allJobsSnapshot = await FirebaseFirestore.instance
+            .collection('Job')
+            .where('jobType', isEqualTo: 'Registered')
+            .get();
+
+        List<String> otherJobs = allJobsSnapshot.docs
+            .map((doc) => doc.id)
+            .where((id) => !recommendedIDs.contains(id))
+            .toList();
+
+        setState(() {
+          recommendedJobs = [...recommendedIDs, ...otherJobs];
+        });
       } else {
         await localMatchJobs();
         throw Exception("AI recommendation failed.");
@@ -352,7 +334,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 4: Match jobs based on student program
+      // Step 5: Match jobs based on student dept
       if (studentDoc.exists) {
         var studentData = studentDoc.data();
         String studProgram = studentData?['dept'] ?? '';
@@ -373,9 +355,20 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 5: Update the state with unique matched jobs
+      // Step 6: Add remaining jobs not in matchedJobIds
+      QuerySnapshot allJobsSnapshot = await FirebaseFirestore.instance
+          .collection('Job')
+          .where('jobType', isEqualTo: 'Registered')
+          .get();
+
+      List<String> otherJobs = allJobsSnapshot.docs
+          .map((doc) => doc.id)
+          .where((id) => !matchedJobIds.contains(id))
+          .toList();
+
+      // Step 7: Update the state with unique matched jobs
       setState(() {
-        recommendedJobs = matchedJobIds.toList(); // Convert Set to List
+        recommendedJobs = [...matchedJobIds, ...otherJobs];
       });
 
       if (matchedJobIds.isEmpty) {
@@ -400,10 +393,10 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Makes gradient visible
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
-          elevation: 0, // Removes the shadow
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         ),
         drawer: Drawer(
           child: Column(

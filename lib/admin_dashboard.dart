@@ -59,10 +59,14 @@ class AdminDashboardState extends State<AdminDashboard> {
           await FirebaseFirestore.instance.collection('Student').get();
       // Count Companies
       var companySnapshot =
-          await FirebaseFirestore.instance.collection('Company').get();
+          await FirebaseFirestore.instance.collection('Company')
+          .where('approvalStatus', isEqualTo: 'Approve')
+          .get();
 
       var externalSnapshot = 
-          await FirebaseFirestore.instance.collection('External').get();
+          await FirebaseFirestore.instance.collection('External').
+          where('externalStatus', isEqualTo: 'Pending')
+          .get();
       
       var registeredSnapshot = 
           await FirebaseFirestore.instance.collection('Company')

@@ -305,7 +305,7 @@ void initState() {
   Widget _buildRegisteredTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 70,
+      dataRowHeight: 80,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,
@@ -341,7 +341,7 @@ void initState() {
   Widget _buildExternalTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 70,
+      dataRowHeight: 80,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,

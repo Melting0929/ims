@@ -231,7 +231,7 @@ void initState() {
   Widget _buildStudentTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 70,
+      dataRowHeight: 80,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,
@@ -262,6 +262,7 @@ void initState() {
         DataColumn(label: Text('Placement Contact\nContact No.', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Offer Letter', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Status', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
       ],
       source: ExternalData(data, context, rowEvenColor, rowOddColor, _refreshData), 
     );
@@ -271,7 +272,7 @@ void initState() {
   Widget _buildCompanyTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 70,
+      dataRowHeight: 80,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,
@@ -701,9 +702,46 @@ class ExternalData extends DataTableSource {
           ),
         ),
         DataCell(Text(item['externalStatus'] ?? '')),
-      ],
-    );
+        DataCell(
+          Row(
+            children: [
+              if (item['externalStatus'] == 'Pending') ...[
+                IconButton(
+                  icon: const Icon(Icons.check, color: Colors.green),
+                  onPressed: () async {
+                    final externalID = item['externalID'] ?? '';
+
+                    final confirm = await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Approve User'),
+                        content: Text('Do you want to approve user $externalID?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Approve'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      await updateExternalStatus(context, externalID, 'Approved');
+                      notifyListeners();
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+    ]);
   }
+
 
   @override
   bool get isRowCountApproximate => false;
@@ -713,7 +751,8 @@ class ExternalData extends DataTableSource {
 
   @override
   int get selectedRowCount => 0;
-}
+
+  }
 
 class CompanyData extends DataTableSource {
   final List<Map<String, dynamic>> data;
