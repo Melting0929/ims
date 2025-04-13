@@ -1,0 +1,117 @@
+import os
+import re
+import nltk
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+from flask import Flask, request, jsonify
+
+# Initialize Flask app
+app = Flask(__name__)
+import firebase_admin
+from firebase_admin import firestore, functions
+
+# Initialize Firebase
+firebase_admin.initialize_app()
+db = firestore.client()
+
+# Load model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Preprocessing function
+def preprocess_text(text):
+    text = text.lower()
+    text = re.sub(r'[^a-zA-Z ]', ' ', text)
+    stop_words = set(nltk.corpus.stopwords.words('english'))
+    sentences = nltk.sent_tokenize(text)
+    keywords = []
+    for sent in sentences:
+        if any(key in sent for key in ['skills', 'education', 'experience', 'technologies']):
+            words = nltk.word_tokenize(sent)
+            words = [w for w in words if w not in stop_words]
+            tagged = nltk.pos_tag(words)
+            filtered = [word for word, tag in tagged if tag not in ['DT', 'IN', 'TO', 'PRP', 'WP']]
+            keywords.extend(filtered)
+    return " ".join(keywords) if keywords else text
+
+# Embedding wrapper
+def get_embeddings(texts):
+    return model.encode(texts, convert_to_tensor=False)
+
+# Cloud Function endpoint for job recommendations
+@app.route('/recommend_jobs', methods=['POST'])
+def recommend_jobs():
+    data = request.get_json()
+    resume_text = data.get('resume_text', '')
+    
+    if not resume_text:
+        return jsonify({'error': 'Resume text is required'}), 400
+    
+    # Process resume text
+    resume_embedding = get_embeddings([preprocess_text(resume_text)])
+    
+    # Fetch jobs from Firestore (the updated schema)
+    jobs_ref = db.collection('jobs').stream()
+    job_ids = []
+    
+    for job in jobs_ref:
+        job_data = job.to_dict()
+        
+        # Extract relevant fields from the job data
+        job_desc = job_data.get('jobDesc', '')
+        job_title = job_data.get('jobTitle', '')
+        tags = " ".join(job_data.get('tags', []))  # Convert tags array to a string
+        
+        # Combine job description and tags to create a feature representation
+        job_features = preprocess_text(job_desc + " " + tags)
+        job_embedding = get_embeddings([job_features])
+        
+        # Compute cosine similarity between resume and job
+        similarity = cosine_similarity([resume_embedding[0]], job_embedding)[0][0]
+        
+        # If the similarity is above a certain threshold (optional), add the job id to the list
+        if similarity > 0.5:  # You can adjust the threshold based on your preference
+            job_ids.append(job.id)
+    
+    # Return the list of job IDs (matching jobs)
+    return jsonify({'recommended_job_ids': job_ids})
+
+# Export as Firebase Function
+recommend_jobs_fn = functions.https.on_request(app)
+
+# Use the official lightweight Python image
+FROM python:3.10-slim-bookworm
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Create working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential python3-dev poppler-utils && \
+    apt-get clean
+
+# Install NLTK data
+RUN mkdir -p /root/nltk_data
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Download NLTK data
+RUN python -m nltk.downloader -d /root/nltk_data punkt stopwords averaged_perceptron_tagger
+
+# Copy source code
+COPY . .
+
+# Expose port (Cloud Run uses 8080 by default)
+EXPOSE 8080
+
+# Set environment variable for NLTK
+ENV NLTK_DATA=/root/nltk_data
+
+# Start the Flask app
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
