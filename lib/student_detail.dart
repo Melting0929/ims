@@ -50,21 +50,38 @@ class StudentDetailPageState extends State<StudentDetailPage> {
       }
 
       if (student['supervisorID'] != null && student['supervisorID'] != '') {
-        DocumentSnapshot supervisorSnapshot = await FirebaseFirestore.instance
-            .collection('Supervisor')
-            .doc(student['supervisorID'])
-            .get();
-        Map<String, dynamic> supervisor =
-            supervisorSnapshot.exists ? supervisorSnapshot.data() as Map<String, dynamic> : {};
-        supervisorName = supervisor['name'] ?? supervisorName;
+      DocumentSnapshot supervisorSnapshot = await FirebaseFirestore.instance
+          .collection('Supervisor')
+          .doc(student['supervisorID'])
+          .get();
+
+      if (supervisorSnapshot.exists) {
+        Map<String, dynamic> supervisorData =
+            supervisorSnapshot.data() as Map<String, dynamic>;
+
+        String? userID = supervisorData['userID'];
+
+        if (userID != null && userID.isNotEmpty) {
+          DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+              .collection('Users')
+              .doc(userID)
+              .get();
+
+          if (userSnapshot.exists) {
+            Map<String, dynamic> userData =
+                userSnapshot.data() as Map<String, dynamic>;
+            supervisorName = userData['name'] ?? supervisorName;
+          }
+        }
       }
+    }
 
       return {
         'name': user['name'] ?? 'No Name',
         'email': user['email'] ?? 'No Email',
-        'contactNo': student['contactNo'] ?? 'No Contact', // Handle null contactNo here
+        'contactNo': student['contactNo'] ?? 'No Contact',
         'dept': student['dept'] ?? 'No Department',
-        'skill': student['skill'] ?? 'No Skill', // Handle nullable skill here
+        'skill': student['skill'] ?? 'No Skill',
         'specialization': student['specialization'] ?? 'No Specialization',
         'studProgram': student['studProgram'] ?? 'No Program',
         'companyName': companyName,

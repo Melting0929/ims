@@ -10,6 +10,7 @@ import 'eprofile_supervisor.dart';
 import 'supervisor_dashboard.dart';
 import 'add_assessment.dart';
 import 'edit_assessment.dart';
+import 'student_detail.dart';
 import 'color.dart';
 
 // Intake Period
@@ -361,11 +362,11 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Makes gradient visible
+        backgroundColor: Colors.transparent, 
         appBar: AppBar(
           title: const Text("Manage Assessment"),
-          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
-          elevation: 0, // Removes the shadow
+          backgroundColor: Colors.transparent, 
+          elevation: 0, 
         ),
         drawer: Drawer(
           child: Column(
@@ -629,7 +630,14 @@ class ManageAssessmentTab extends State<ManageAssessment> {
                               items: assessmentNames.map((name) {
                                 return DropdownMenuItem(
                                   value: name,
-                                  child: Text(name),
+                                  child: SizedBox(
+                                  width: 80,
+                                    child: Text(
+                                      name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.black, fontSize: 14),
+                                    ),
+                                  ),
                                 );
                               }).toList(),
                               onChanged: (newValue) {
@@ -717,7 +725,24 @@ class AssessmentData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['studentName'] ?? '')),
+        DataCell(
+          Text(
+            item['studentName'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentDetailPage(studentId: item['studID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['templateTitle'] ?? '')),
         DataCell(Text(item['assessmentOpenDate'] != null
             ? dateFormat.format((item['assessmentOpenDate'] as Timestamp).toDate())
@@ -776,7 +801,7 @@ class AssessmentData extends DataTableSource {
                     ),
                   );
                   if (result == true) {
-                    refreshCallback(); // Refresh data when returning from the update page
+                    refreshCallback();
                   }
                 },
               ),

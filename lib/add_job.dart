@@ -47,8 +47,9 @@ class _AddJobState extends State<AddJob> {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController tagsController = TextEditingController();
 
-  RegExp numRegExp = RegExp(r'^\d+$');
   RegExp doubleRegExp = RegExp(r'^\d+(\.\d{1,2})?$');
+  RegExp durRegExp = RegExp(r'^[3-6]$');
+
 
   @override
   void initState() {
@@ -386,8 +387,8 @@ class _AddJobState extends State<AddJob> {
                                     prefixIcon: const Icon(Icons.calendar_month),
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty || !numRegExp.hasMatch(value)) {
-                                      return "Please enter a valid job duration (e.g. 3).";
+                                    if (value == null || value.isEmpty || !durRegExp.hasMatch(value)) {
+                                      return "Please enter a valid job duration (either 3 - 6).";
                                     }
                                     return null;
                                   },

@@ -1,5 +1,0 @@
-firebase-admin
-flask
-numpy
-gensim
-joblib

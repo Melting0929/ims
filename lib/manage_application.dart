@@ -231,7 +231,7 @@ void initState() {
   Widget _buildStudentTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 80,
+      dataRowHeight: 135,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,
@@ -244,7 +244,7 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 5,
+      rowsPerPage: 3,
       showFirstLastButtons: true,
       renderEmptyRowsInTheEnd: true,
 
@@ -272,7 +272,7 @@ void initState() {
   Widget _buildCompanyTable(List<Map<String, dynamic>> data) {
     return PaginatedDataTable2(
       columnSpacing: 16,
-      dataRowHeight: 80,
+      dataRowHeight: 135,
       minWidth: 1300,
       dividerThickness: 1.5,
       horizontalMargin: 16,
@@ -284,22 +284,18 @@ void initState() {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 5,
+      rowsPerPage: 3,
       showFirstLastButtons: true,
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
         DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Job Title', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Password', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company ID', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company Name', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company\nName', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Address', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Company\nRegistration\nNo', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Company\nReg No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Established\nYear', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Description', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Industry', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Employee\nCount', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
@@ -703,40 +699,72 @@ class ExternalData extends DataTableSource {
         ),
         DataCell(Text(item['externalStatus'] ?? '')),
         DataCell(
-          Row(
-            children: [
-              if (item['externalStatus'] == 'Pending') ...[
-                IconButton(
-                  icon: const Icon(Icons.check, color: Colors.green),
-                  onPressed: () async {
-                    final externalID = item['externalID'] ?? '';
+          (item['externalStatus'] == 'Rejected' || item['externalStatus'] == 'Approved')
+            ? Container()
+            : Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    onPressed: () async {
+                      final externalID = item['externalID'] ?? '';
+                      final studID = item['studID'] ?? '';
 
-                    final confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Approve User'),
-                        content: Text('Do you want to approve user $externalID?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Approve'),
-                          ),
-                        ],
-                      ),
-                    );
+                      final confirm = await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Approve User'),
+                          content: Text('Do you want to approve user $externalID?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Approve'),
+                            ),
+                          ],
+                        ),
+                      );
 
-                    if (confirm == true) {
-                      await updateExternalStatus(context, externalID, 'Approved');
-                      notifyListeners();
-                    }
-                  },
-                ),
-              ],
-            ],
+                      if (confirm == true) {
+                        await updateExternalStatus(context, externalID, studID, 'Approved');
+                        notifyListeners();
+                      }
+                    },
+                  ),
+                  // Reject Button
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () async {
+                      final externalID = item['externalID'] ?? '';
+                      final studID = item['studID'] ?? '';
+
+                      final confirm = await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Reject Application'),
+                          content: Text('Are you sure you want to reject application $externalID?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Reject'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        await updateExternalStatus(context, externalID, studID, 'Rejected');
+                        refreshCallback();
+                      }
+                    },
+                  ),
+                ],
           ),
         ),
     ]);
@@ -776,15 +804,11 @@ class CompanyData extends DataTableSource {
       cells: [
         DataCell(Text(item['name'] ?? '')),
         DataCell(Text(item['pContactJobTitle'] ?? '')),
-        DataCell(Text(item['contactNo'] ?? '')),
         DataCell(Text(item['email'] ?? '')),
-        DataCell(Text(item['password'] ?? '')),
-        DataCell(Text(item['companyID'] ?? '')),
         DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['companyAddress'] ?? '')),
         DataCell(Text(item['companyRegNo'] ?? '')),
         DataCell(Text(item['companyYear'].toString())),
-        DataCell(Text(item['companyDesc'] ?? '')),
         DataCell(Text(item['companyIndustry'] ?? '')),
         DataCell(Text(item['companyEmpNo'].toString())),
         DataCell(Text(item['companyEmail'] ?? '')),
@@ -910,11 +934,17 @@ class CompanyData extends DataTableSource {
     }
   }
 
-  Future<void> updateExternalStatus(BuildContext context, String externalID, String status) async {
+  Future<void> updateExternalStatus(BuildContext context, String externalID, String studID, String status) async {
     try {
       await FirebaseFirestore.instance.collection('External').doc(externalID).update({
         'externalStatus': status,
       });
+
+      if (status == 'Approved') {
+        await FirebaseFirestore.instance.collection('Student').doc(studID).update({
+          'companyID': 'TnFa17Tuohib4Nf7rE0d',
+        });
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Application $externalID updated to $status successfully!')),

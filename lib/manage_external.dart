@@ -427,7 +427,7 @@ void initState() {
                           icon: const Icon(Icons.refresh, color: Colors.white),
                           label: const Text("Refresh"),
                         ),
-                        if (!isMobile(context)) ... { 
+                        //if (!isMobile(context)) ... { 
                           const SizedBox(width: 8),
                           ElevatedButton.icon(
                             onPressed: () async {
@@ -449,7 +449,7 @@ void initState() {
                             icon: const Icon(Icons.assignment_add, color: Colors.black),
                             label: const Text("Apply New Application", style: TextStyle(color: Colors.black)),
                           ),
-                        },
+                        //},
                       ], 
                     ),
                   ),
@@ -536,9 +536,8 @@ class ExternalData extends DataTableSource {
                     );
 
                     if (confirm == true) {
-                      await deleteApplication(context, externalID);
+                      await cancelApplication(context, externalID);
 
-                      data.removeWhere((element) => element['externalID'] == externalID);
                       notifyListeners();
                     }
                   },

@@ -9,7 +9,8 @@ import 'admin_dashboard.dart';
 import 'manage_application.dart';
 import 'manage_user.dart';
 import 'upload_guideline.dart';
-//import 'add_job.dart';
+import 'student_detail.dart';
+import 'company_detail.dart';
 import 'edit_job.dart';
 import 'color.dart';
 
@@ -276,6 +277,7 @@ void initState() {
         var companyName = company['companyName'];
 
         Map<String, dynamic> registerData = {
+          'companyID': companyID,
           'jobID': jobID,
           'jobTitle': register['jobTitle'] ?? '',
           'jobDesc': register['jobDesc'] ?? '',
@@ -517,19 +519,6 @@ void initState() {
       ],
     );
   }
-
-  /*Future<void> _navigateToAddJob(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddJob(userId: widget.userId, refreshCallback: _refreshData),
-      ),
-    );
-
-    if (result == true) {
-      _refreshData(); // Refresh data when returning from the update page
-    }
-  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -797,7 +786,14 @@ void initState() {
                             items: comRegisterTitles.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
-                                child: Text(title),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),
@@ -830,7 +826,14 @@ void initState() {
                             items: jobRegisterTitles.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
-                                child: Text(title),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),
@@ -902,7 +905,24 @@ class ExternalData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['studID'] ?? '')),
+        DataCell(
+          Text(
+            item['studID'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentDetailPage(studentId: item['studID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['exCompName'] ?? '')),
         DataCell(Text(item['exCompEmail'] ?? '')),
         DataCell(Text(item['exCompRegNo'] ?? '')),
@@ -978,7 +998,24 @@ class JobData extends DataTableSource {
         DataCell(Text(item['jobStatus'] ?? '')),
         DataCell(Text(item['location'])),
         DataCell(Text((item['tags'] as List<dynamic>).join(', '))),
-        DataCell(Text(item['companyName'] ?? '')),
+        DataCell(
+          Text(
+            item['companyName'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompanyDetailPage(companyId: item['companyID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['name'] ?? '')),
         DataCell(
         Row(
@@ -993,7 +1030,7 @@ class JobData extends DataTableSource {
                   ),
                 );
                 if (result == true) {
-                  refreshCallback(); // Refresh data when returning from the update page
+                  refreshCallback();
                 }
               },
             ),

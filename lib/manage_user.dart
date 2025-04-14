@@ -556,14 +556,14 @@ void initState() {
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
-        DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
-        DataColumn(label: Text('Password', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company Name', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Reg No', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Industry', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Company\nEmail', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Contact No', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
+        DataColumn(label: Text('Password', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Logo', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Approval\nStatus', style: TextStyle(color: Colors.white))),
         DataColumn(label: Text('Actions', style: TextStyle(color: Colors.white))),
@@ -786,7 +786,7 @@ void initState() {
         ),
       );
       if (result == true) {
-        _refreshData(); // Refresh data when returning
+        _refreshData();
       }
     } else if (userType == 'Supervisor') {
       final result = await  Navigator.push(
@@ -796,7 +796,7 @@ void initState() {
         ),
       );
       if (result == true) {
-        _refreshData(); // Refresh data when returning
+        _refreshData();
       }
     } else if (userType == 'Company') {
       final result = await  Navigator.push(
@@ -806,7 +806,7 @@ void initState() {
         ),
       );
       if (result == true) {
-        _refreshData(); // Refresh data when returning
+        _refreshData();
       }
     } else {
       final result = await Navigator.push(
@@ -816,7 +816,7 @@ void initState() {
         ),
       );
       if (result == true) {
-        _refreshData(); // Refresh data when returning
+        _refreshData();
       }
     }
   }
@@ -1460,7 +1460,7 @@ class CompanyData extends DataTableSource {
       cells: [
         DataCell(
           Text(
-            item['name'] ?? '',
+            item['companyName'] ?? '',
             style: const TextStyle(
               color: Colors.blue,
               decoration: TextDecoration.underline,
@@ -1476,14 +1476,13 @@ class CompanyData extends DataTableSource {
             );
           },
         ),
-        DataCell(Text(item['contactNo'] ?? '')),
-        DataCell(Text(item['email'] ?? '')),
-        DataCell(Text(item['password'] ?? '')),
-        DataCell(Text(item['companyName'] ?? '')),
         DataCell(Text(item['companyRegNo'] ?? '')),
         DataCell(Text(item['companyIndustry'] ?? '')),
         DataCell(Text(item['companyEmail'] ?? '')),
-        
+        DataCell(Text(item['name'] ?? '',)),
+        DataCell(Text(item['contactNo'] ?? '')),
+        DataCell(Text(item['email'] ?? '')),
+        DataCell(Text(item['password'] ?? '')),
         DataCell(
           InkWell(
             child: IconButton(

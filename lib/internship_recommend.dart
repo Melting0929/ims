@@ -31,6 +31,9 @@ class InternshipRecommendState extends State<InternshipRecommend> {
   String selectedMenu = "Internship Recommendation Page";
   String extractedText = "Extracted text will appear here...";
   List<String> recommendedJobs = [];
+  int currentPage = 0;
+  final int jobsPerPage = 5;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -194,16 +197,15 @@ class InternshipRecommendState extends State<InternshipRecommend> {
       final response = await http.post(
         Uri.parse("https://recommendjobs-ayekkctrbq-uc.a.run.app"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"resume_text": resumeText, "studentId": studID}),
+        body: jsonEncode({"resume_text": resumeText}),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        List<Map<String, dynamic>> aiRecommendations = List<Map<String, dynamic>>.from(data["recommended_jobs"]);
 
-        List<String> recommendedIDs = aiRecommendations.map((job) => job["jobID"].toString()).toList();
+        List<String> recommendedIDs = List<String>.from(data["recommended_job_ids"]);
 
-        // Get all other jobs not in recommendations
+        // Fetch all other jobs not in the recommendation list
         QuerySnapshot allJobsSnapshot = await FirebaseFirestore.instance
             .collection('Job')
             .where('jobType', isEqualTo: 'Registered')
@@ -214,12 +216,14 @@ class InternshipRecommendState extends State<InternshipRecommend> {
             .where((id) => !recommendedIDs.contains(id))
             .toList();
 
+        // Combine and update state
         setState(() {
           recommendedJobs = [...recommendedIDs, ...otherJobs];
+          isLoading = false;
         });
       } else {
         await localMatchJobs();
-        throw Exception("AI recommendation failed.");
+        throw Exception("AI recommendation failed with status ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("AI recommendation error: $e");
@@ -228,7 +232,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
 
   Future<void> localMatchJobs() async {
     try {
-      Set<String> matchedJobIds = {}; // Use a Set to avoid duplicates
+      Set<String> matchedJobIds = {};
 
       // Step 1: Match jobs based on resume text
       if (resumeURL.isNotEmpty) {
@@ -238,7 +242,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         List<String> resumeWords = extractedText
             .toLowerCase()
             .split(RegExp(r'\s+')) // Split by whitespace
-            .map((word) => word.replaceAll(RegExp(r'[^\w]'), '')) // Remove punctuation
+            .map((word) => word.replaceAll(RegExp(r'[^\w]'), ''))
             .toList();
 
         // Fetch jobs from Firestore
@@ -369,6 +373,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
       // Step 7: Update the state with unique matched jobs
       setState(() {
         recommendedJobs = [...matchedJobIds, ...otherJobs];
+        isLoading = false;
       });
 
       if (matchedJobIds.isEmpty) {
@@ -549,12 +554,16 @@ class InternshipRecommendState extends State<InternshipRecommend> {
               ),
               const SizedBox(height: 30),
               Expanded(
-                child: recommendedJobs.isEmpty
-                    ? const Center(child: Text("No job recommendations available. Kindly upload your Resume."))
+                child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : recommendedJobs.isEmpty
+                          ? const Center(child: Text("No job recommendations available. Kindly upload your Resume."))
                     : ListView.builder(
-                        itemCount: recommendedJobs.length > 5 ? 5 : recommendedJobs.length,
+                        itemCount: ((currentPage + 1) * jobsPerPage > recommendedJobs.length)
+                          ? recommendedJobs.length - currentPage * jobsPerPage
+                          : jobsPerPage,
                         itemBuilder: (context, index) {
-                          String jobId = recommendedJobs[index];
+                          String jobId = recommendedJobs[currentPage * jobsPerPage + index];
                           return FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore.instance.collection('Job').doc(jobId).get(),
                             builder: (context, snapshot) {
@@ -681,6 +690,35 @@ class InternshipRecommendState extends State<InternshipRecommend> {
                           );
                         },
                       ),
+                      
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: currentPage > 0
+                        ? () {
+                            setState(() {
+                              currentPage--;
+                            });
+                          }
+                        : null,
+                    tooltip: 'Previous Page',
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: Colors.black),
+                    onPressed: (currentPage + 1) * jobsPerPage < recommendedJobs.length
+                        ? () {
+                            setState(() {
+                              currentPage++;
+                            });
+                          }
+                        : null,
+                    tooltip: 'Next Page',
+                  ),
+                ],
               ),
             ],
           ),

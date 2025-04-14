@@ -10,6 +10,7 @@ import 'eprofile_company.dart';
 import 'company_dashboard.dart';
 import 'download_guideline.dart';
 import 'manage_cjob.dart';
+import 'student_detail.dart';
 import 'color.dart';
 
 class ManageApplicant extends StatefulWidget {
@@ -67,7 +68,6 @@ void initState() {
   String? _uploadedFileName;
 
   Future<void> _pickAndUploadDocument(String applicationID) async {
-    // Pick file
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
@@ -305,6 +305,7 @@ void initState() {
 
         Map<String, dynamic> applicantData = {
           'applicationID': application['applicationID'] ?? '',
+          'studID': application['studID'] ?? '',
           'studName': user['name'] ?? '',
           'jobTitle': job['jobTitle'] ?? '',
           'jobDesc': job['jobDesc'] ?? '',
@@ -786,7 +787,14 @@ void initState() {
                             items: jobTitles.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
-                                child: Text(title),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),
@@ -899,7 +907,14 @@ void initState() {
                             items: jobTitles.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
-                                child: Text(title),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),
@@ -1013,7 +1028,24 @@ class ApplicantData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['studName'] ?? '')),
+        DataCell(
+          Text(
+            item['studName'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentDetailPage(studentId: item['studID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['jobTitle'] ?? '')),
         DataCell(Text(item['jobDesc'] ?? '')),
         DataCell(Text(item['jobAllowance'].toString())),
@@ -1097,7 +1129,24 @@ class InternData extends DataTableSource {
         (states) => isEven ? rowEvenColor : rowOddColor,
       ),
       cells: [
-        DataCell(Text(item['name'] ?? '')),
+        DataCell(
+          Text(
+            item['name'] ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.blue
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentDetailPage(studentId: item['studID']),
+              ),
+            );
+          },
+        ),
         DataCell(Text(item['jobTitle'] ?? '')),
         DataCell(Text(item['jobDesc'] ?? '')),
         DataCell(

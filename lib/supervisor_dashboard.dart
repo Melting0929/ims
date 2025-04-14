@@ -5,6 +5,7 @@ import 'download_guideline.dart';
 import 'login_web.dart';
 import 'eprofile_supervisor.dart';
 import 'manage_assessment.dart';
+import 'student_detail.dart';
 import 'color.dart';
 
 class SupervisorDashboard extends StatefulWidget {
@@ -112,7 +113,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginWeb()),
-        (Route<dynamic> route) => false, // removes all previous routes
+        (Route<dynamic> route) => false,
       );
     }
   }
@@ -496,7 +497,14 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                                   items: companyNames.map((String name) {
                                     return DropdownMenuItem<String>(
                                       value: name,
-                                      child: Text(name),
+                                      child: SizedBox(
+                                        width: 80,
+                                        child: Text(
+                                          name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(color: Colors.black, fontSize: 14),
+                                        ),
+                                      ),
                                     );
                                   }).toList(),
                                   onChanged: (value) {
@@ -555,7 +563,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                               DataColumn(label: Text('Program', style: TextStyle(color: Colors.white))),
                               DataColumn(label: Text('Company', style: TextStyle(color: Colors.white))),
                             ],
-                            source: StudentDataSource(students),
+                            source: StudentDataSource(students, context),
                             rowsPerPage: 3,
                             showFirstLastButtons: true,
                             dataRowMinHeight: 10,
@@ -579,8 +587,9 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
 
 class StudentDataSource extends DataTableSource {
   final List<QueryDocumentSnapshot> students;
+  final BuildContext context;
 
-  StudentDataSource(this.students);
+  StudentDataSource(this.students, this.context);
 
   Future<Map<String, dynamic>> _fetchUserData(String userId) async {
     final userSnapshot = await FirebaseFirestore.instance
@@ -608,23 +617,21 @@ class StudentDataSource extends DataTableSource {
   }
 
   Future<List<DropdownMenuItem<String>>> _getCompanyList() async {
-    // Fetch company data from Firestore (Company collection)
     QuerySnapshot companyQuerySnapshot = await FirebaseFirestore.instance
-        .collection('Company')  // Update the collection name to Company
+        .collection('Company')
         .get();
 
     List<DropdownMenuItem<String>> companyItems = [];
 
     for (var companyDoc in companyQuerySnapshot.docs) {
-      // Safely access company data with a null check
       var companyData = companyDoc.data() as Map<String, dynamic>?;
       String companyName = companyData?['companyName'] ?? 'Unknown Company';
-      String companyId = companyDoc.id;  // Company ID
+      String companyId = companyDoc.id;
 
       companyItems.add(
         DropdownMenuItem<String>(
-          value: companyId,  // Store the company ID as the value
-          child: Text(companyName),  // Display company name
+          value: companyId,
+          child: Text(companyName),
         ),
       );
     }
@@ -661,13 +668,13 @@ class StudentDataSource extends DataTableSource {
                       .doc(studentId)
                       .update({'companyID': selectedCompanyId});
                 }
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: const Text('OK'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
@@ -686,7 +693,24 @@ class StudentDataSource extends DataTableSource {
     final companyId = student['companyID'] ?? '';
 
     return DataRow(cells: [
-      DataCell(Text(student['studID'] ?? 'N/A')),
+      DataCell(
+        Text(
+          student['studID'] ?? '',
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+            decorationColor: Colors.blue
+          ),
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StudentDetailPage(studentId: student['studID']),
+            ),
+          );
+        },
+      ),
       DataCell(FutureBuilder<Map<String, dynamic>>(
         future: _fetchUserData(userId),
         builder: (context, userSnapshot) {
@@ -708,7 +732,6 @@ class StudentDataSource extends DataTableSource {
         },
       )),
       DataCell(Text(student['studProgram'] ?? 'N/A')),
-      
       DataCell(
         FutureBuilder<String>(
           future: _fetchCompanyName(companyId),

@@ -295,11 +295,11 @@ void initState() {
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Makes gradient visible
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text("Manage Job Posting"),
-          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
-          elevation: 0, // Removes the shadow
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         ),
         drawer: Drawer(
           child: Column(
@@ -510,7 +510,14 @@ void initState() {
                             items: jobTitles.map((title) {
                               return DropdownMenuItem<String>(
                                 value: title,
-                                child: Text(title),
+                                child: SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    title,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black, fontSize: 14),
+                                  ),
+                                ),
                               );
                             }).toList(),
                           ),

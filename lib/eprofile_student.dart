@@ -3,6 +3,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'student_dashboard.dart';
 
 class EprofileStudent extends StatefulWidget {
   final String userId;
@@ -163,6 +164,10 @@ class EprofileStudentTab extends State<EprofileStudent> {
         title: const SizedBox.shrink(),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white),
+          onPressed: () => Navigator.pop(context),                             
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: Stack(
@@ -234,6 +239,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Full Name Field
                                 TextFormField(
                                   controller: studentNameController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Full Name",
                                     hintText: "Enter the full name",
@@ -253,6 +259,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Email Field
                                 TextFormField(
                                   controller: studentEmailController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Email",
                                     hintText: "Enter the email address",
@@ -323,6 +330,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Dept Field
                                 TextFormField(
                                   controller: studentDeptController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Department",
                                     hintText: "Enter the department",
@@ -336,6 +344,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Program Field
                                 TextFormField(
                                   controller: studentProgramController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Program",
                                     hintText: "Enter the Program",
@@ -349,6 +358,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Specialization Field
                                 TextFormField(
                                   controller: studentSpecializationController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Specialization",
                                     hintText: "Enter the Specialization",
@@ -362,6 +372,7 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                 // Intake Period Field
                                 TextFormField(
                                   controller: studentIntakePeriodController,
+                                  enabled: false,
                                   decoration: InputDecoration(
                                     labelText: "Intake Period",
                                     hintText: "Enter the intake period",
@@ -561,8 +572,16 @@ class EprofileStudentTab extends State<EprofileStudent> {
                                     const SizedBox(width: 16),
                                     ElevatedButton(
                                       onPressed: () {
-                                        if (mounted) {
+                                        if (Navigator.canPop(context)) {
                                           Navigator.pop(context);
+                                        } else {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  StudentDashboard(userId: widget.userId),
+                                            ),
+                                          );
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(

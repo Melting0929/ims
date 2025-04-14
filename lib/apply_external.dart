@@ -95,7 +95,8 @@ class _AddExternalState extends State<AddExternal> {
   RegExp phoneRegExp = RegExp(r'^[0-9\s\-]+$');
   RegExp yearRegExp = RegExp(r'^(1|2)\d{3}$');
   RegExp empNoRegExp = RegExp(r'^[0-9]+$');
-  RegExp numRegExp = RegExp(r'^\d+$');
+  //RegExp numRegExp = RegExp(r'^\d+$');
+  RegExp durRegExp = RegExp(r'^[3-6]$');
 
   @override
   void initState() {
@@ -264,7 +265,7 @@ class _AddExternalState extends State<AddExternal> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: 30, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -369,7 +370,7 @@ class _AddExternalState extends State<AddExternal> {
                                 const SizedBox(height: 16),
                                 _buildTextField(jobTitleController, "Job Title", Icons.title),
                                 const SizedBox(height: 16),
-                                _buildTextField(jobDurationController, "Job Duration (in months)", Icons.timer),
+                                _buildTextField(jobDurationController, "Job Duration (in months)", Icons.timer, isDur: true),
                                 const SizedBox(height: 16),
                                 const Text("Offer Letter:"),
                                 const SizedBox(height: 5),
@@ -422,7 +423,7 @@ class _AddExternalState extends State<AddExternal> {
 
   Widget _buildTextField(
       TextEditingController controller, String label, IconData icon,
-      {bool isMultiline = false, bool isEmail = false, bool isPhone = false, bool isYear = false, bool isEmp = false, bool isRegister = false, int minLength = 0, String? hintText}) {
+      {bool isMultiline = false, bool isEmail = false, bool isPhone = false, bool isYear = false, bool isEmp = false, bool isRegister = false, bool isDur = false, int minLength = 0, String? hintText}) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
@@ -455,6 +456,9 @@ class _AddExternalState extends State<AddExternal> {
         }
         if (isEmp && value!.isNotEmpty && !empNoRegExp.hasMatch(value)) {
           return "Please enter a valid number of employees.";
+        }
+        if (isDur && value!.isNotEmpty && !durRegExp.hasMatch(value)) {
+          return "Please enter a valid duration (3-6).";
         }
         if (minLength > 0 && value!.isNotEmpty && value.length < minLength) {
           return "$label should be at least $minLength characters long.";

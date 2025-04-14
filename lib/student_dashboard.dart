@@ -47,12 +47,15 @@ class StudentDashboardState extends State<StudentDashboard> {
     });
   }
 
+  // Used to check if the device is mobile or web
   bool isMobile(BuildContext context) {
     return MediaQuery.of(context).size.width < 600;
   }
 
+  // Fetch the user detail (Student)
   Future<void> fetchStudentDetails() async {
     try {
+      // Data from Users Collection
       var userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(widget.userId)
@@ -64,6 +67,7 @@ class StudentDashboardState extends State<StudentDashboard> {
           studentName = userDoc.data()?['name'] ?? 'No Name';
         });
 
+        // Data from Student Collection
         var studentDoc = await FirebaseFirestore.instance
             .collection('Student')
             .where('userID', isEqualTo: widget.userId)
@@ -82,8 +86,10 @@ class StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
+  // Fetch Application for display on the datatable
   Future<void> fetchApplications() async {
     try {
+      // Data from Application Collection that are under this user
       var querySnapshot = await FirebaseFirestore.instance
           .collection('Application')
           .where('studID', isEqualTo: studID)
@@ -155,7 +161,9 @@ class StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
+  // Logout Funtion
   Future<void> logout() async {
+    // Show the dialog for user to choose
     bool confirmLogout = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -187,6 +195,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     );
 
     if (confirmLogout) {
+      // Sign out from Firebase
       await FirebaseAuth.instance.signOut();
 
       // Redirect based on platform
@@ -205,6 +214,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
+  // Build the drawer item for the menu
   Widget buildDrawerItem({
     required IconData icon,
     required String title,
@@ -225,6 +235,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  // Upload Resume PDF Function
   Future<void> _uploadResume() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -264,7 +275,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     );
 
     if (confirmUpload) {
-      await _uploadDocument();
+      await _uploadDocument(); // Call the upload function
     }
   }
 
@@ -351,11 +362,9 @@ class StudentDashboardState extends State<StudentDashboard> {
           const SnackBar(content: Text('Student record not found.')),
         );
       }
-  
-      // Close progress indicator
+
       Navigator.pop(context);
   
-      // Clear selection
       setState(() {
         _selectedDocument = null;
         _uploadedFileName = null;
@@ -368,6 +377,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     }
   }
   
+  // Function to launch URL (Resume)
   void _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -377,6 +387,7 @@ class StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
+  // Function to build the resume display widget
   Widget buildResumeDisplay() {
     return resumeURL != null
         ? GestureDetector(
@@ -410,11 +421,11 @@ class StudentDashboardState extends State<StudentDashboard> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Makes gradient visible
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text("Dashboard"),
-          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
-          elevation: 0, // Removes the shadow
+          backgroundColor: Colors.transparent, 
+          elevation: 0,
         ),
         drawer: Drawer(
           child: Column(
@@ -567,11 +578,11 @@ class StudentDashboardState extends State<StudentDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          studentName,
+                          studentName, // Display student name
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          studID,
+                          studID, // Display student ID
                           style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 3),
@@ -625,6 +636,8 @@ class StudentDashboardState extends State<StudentDashboard> {
                     ],
                   ),
                 ),
+
+                // Application History Section
                 Padding(
                   padding: const EdgeInsets.only(top: 30.0, right: 50, left: 50),
                   child: Column(
@@ -635,14 +648,14 @@ class StudentDashboardState extends State<StudentDashboard> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 20),
-                      applications.isEmpty
+                      applications.isEmpty // if empty shows text
                         ? const Center(
                             child: Text(
                               "No Application Yet...",
                               style: TextStyle(fontSize: 16, color: Colors.grey),
                             ),
                           )
-                        : isMobile(context)
+                        : isMobile(context) // if is mobile then shows in card, else in datatable
                             ? ListView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
@@ -664,7 +677,8 @@ class StudentDashboardState extends State<StudentDashboard> {
                                             Text("Applied: ${app['dateApplied'] ?? '-'}"),
                                           ],
                                         ),
-                                      trailing: IconButton(
+                                      trailing: app['applicationStatus'] == 'Pending'
+                                      ? IconButton(
                                         icon: const Icon(Icons.cancel, color: Colors.orange),
                                         onPressed: () async {
                                           final applicationID = app['applicationID'] ?? '';
@@ -708,12 +722,13 @@ class StudentDashboardState extends State<StudentDashboard> {
                                             });
                                           }
                                         },
-                                      ),
+                                      )
+                                      : null, // Show cancel button only if status is Pending
                                     ),
                                   );
                                 },
                               )
-                            : SingleChildScrollView(
+                            : SingleChildScrollView( // Datatable for web
                               scrollDirection: Axis.horizontal,
                               child: SizedBox(
                                 width: 1200, 
@@ -752,7 +767,7 @@ class StudentDashboardState extends State<StudentDashboard> {
   }
 }
 
-// DataTable Source for pagination
+// Application DataTable
 class ApplicationDataSource extends DataTableSource {
   final List<Map<String, dynamic>> applications;
   final BuildContext context;
@@ -780,7 +795,7 @@ class ApplicationDataSource extends DataTableSource {
       DataCell(
         Row(
           children: [
-            if (item['applicationStatus'] == 'Pending')
+            if (item['applicationStatus'] == 'Pending') // Cancel Button shows only if the status is Pending
               IconButton(
                 icon: const Icon(Icons.cancel, color: Colors.orange),
                 onPressed: () async {

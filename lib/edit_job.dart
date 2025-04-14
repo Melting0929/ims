@@ -52,7 +52,7 @@ class EditJobTab extends State<EditJob> {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController tagController = TextEditingController();
 
-  RegExp numRegExp = RegExp(r'^\d+$');
+  RegExp durRegExp = RegExp(r'^[3-6]$');
   RegExp doubleRegExp = RegExp(r'^\d+(\.\d{1,2})?$');
 
   @override
@@ -267,8 +267,8 @@ class EditJobTab extends State<EditJob> {
                                     prefixIcon: const Icon(Icons.calendar_month),
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty || !numRegExp.hasMatch(value)) {
-                                      return "Please enter a valid job duration (e.g. 3 months).";
+                                    if (value == null || value.isEmpty || !durRegExp.hasMatch(value)) {
+                                      return "Please enter a valid job duration (either 3-6).";
                                     }
                                     return null;
                                   },
