@@ -25,14 +25,11 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
   String selectedCompany = 'All';
   String? selectedCompanyID;
   Map<String, String> companyMap = {};
+  Map<String, String>  studentMap = {};
+  List<String> intakes = [];
   List<String> companyNames = [];
 
   String selectedIntake = 'All';
-  List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
-                        'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
-                        'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
-                        'Jan-Apr 2024', 'May-Aug 2024', 'Sept-Dec 2024', 
-                        'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025'];
 
   List<Map<String, dynamic>> studentList = [];
 
@@ -41,6 +38,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
     super.initState();
     fetchSupervisorDetails().then((_) {
       fetchCompanies();
+      fetchIntakes();
     });
   }
 
@@ -173,6 +171,48 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
     }
   }
 
+  Future<void> fetchIntakes() async {
+    try {
+      var userQuerySnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .where('userType', isEqualTo: 'Student')
+          .get();
+
+      Map<String, String> tempStudentMap = {};
+
+      for (var userDoc in userQuerySnapshot.docs) {
+        var userId = userDoc.id;
+
+        var studentQuerySnapshot = await FirebaseFirestore.instance
+            .collection('Student')
+            .where('userID', isEqualTo: userId)
+            .where('supervisorID', isEqualTo: supervisorID)
+            .get();
+
+        for (var studentDoc in studentQuerySnapshot.docs) {
+          var studentData = studentDoc.data();
+          var intake = studentData['intakePeriod'];
+
+          if (intake == null || intake.isEmpty) {
+            print("Student with userID: $userId has no intake.");
+            continue;
+          }
+
+          tempStudentMap[intake] = intake;
+        }
+      }
+
+      setState(() {
+        studentMap = tempStudentMap;
+        intakes = ['All'];
+        intakes.addAll(tempStudentMap.keys.toList());
+      });
+
+    } catch (e) {
+      print("Error fetching intakes: $e");
+    }
+  }
+
   Future<void> fetchStudents() async {
     try {
       Query query = FirebaseFirestore.instance.collection('Student')
@@ -259,11 +299,11 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Makes gradient visible
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text("Dashboard"),
-          backgroundColor: Colors.transparent, // Makes the AppBar background transparent
-          elevation: 0, // Removes the shadow
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         ),
         drawer: Drawer(
           child: Column(
@@ -564,7 +604,7 @@ class SupervisorDashboardState extends State<SupervisorDashboard> {
                               DataColumn(label: Text('Company', style: TextStyle(color: Colors.white))),
                             ],
                             source: StudentDataSource(students, context),
-                            rowsPerPage: 3,
+                            rowsPerPage: 4,
                             showFirstLastButtons: true,
                             dataRowMinHeight: 10,
                             headingRowHeight: 60,

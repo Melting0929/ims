@@ -197,11 +197,10 @@ class JobDetailState extends State<JobDetail> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (!hasApplied) {
-                        // Logic for applying to the job
+                        // Call the function to apply for the job
                         await applyForJob();
                         await fetchApplications(); // Refresh application status
                       } else {
-                        // Logic for already applied (optional)
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('You have already applied for this job.')),
                         );

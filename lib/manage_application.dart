@@ -699,7 +699,7 @@ class ExternalData extends DataTableSource {
         ),
         DataCell(Text(item['externalStatus'] ?? '')),
         DataCell(
-          (item['externalStatus'] == 'Rejected' || item['externalStatus'] == 'Approved')
+          (item['externalStatus'] == 'Rejected' || item['externalStatus'] == 'Approved' || item['externalStatus'] == 'Canceled')
             ? Container()
             : Row(
                 children: [
@@ -729,7 +729,7 @@ class ExternalData extends DataTableSource {
 
                       if (confirm == true) {
                         await updateExternalStatus(context, externalID, studID, 'Approved');
-                        notifyListeners();
+                        refreshCallback();
                       }
                     },
                   ),

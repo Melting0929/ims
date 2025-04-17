@@ -59,12 +59,11 @@ class _LoginTabState extends State<LoginTab> {
         if (userQuerySnapshot.docs.isNotEmpty) {
           var userDoc = userQuerySnapshot.docs.first;
 
-          // Check if the widget is still mounted before navigating
           if (mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => StudentDashboard(userId: userDoc.id), // Replace with your next screen
+                builder: (context) => StudentDashboard(userId: userDoc.id),
               ),
             );
           }
@@ -80,7 +79,7 @@ class _LoginTabState extends State<LoginTab> {
       body: Container(
         color: AppColors.backgroundCream,
         child: Center(
-          child: SingleChildScrollView( // <-- Wrap in scroll view
+          child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(5.0),
               child: Form(

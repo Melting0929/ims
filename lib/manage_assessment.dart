@@ -44,11 +44,8 @@ class ManageAssessmentTab extends State<ManageAssessment> {
 
   List<String> studentNames = [];
 
-  List<String> intakes = ['All', 'Jan-Apr 2021', 'May-Aug 2021', 'Sept-Dec 2021', 
-                        'Jan-Apr 2022', 'May-Aug 2022', 'Sept-Dec 2022', 
-                        'Jan-Apr 2023', 'May-Aug 2023', 'Sept-Dec 2023', 
-                        'Jan-Apr 2024', 'May-Aug 2024', 'Sept-Dec 2024', 
-                        'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025'];
+  Map<String, String>  studentMap = {};
+  List<String> intakes = [];
 
   @override
   void initState() {
@@ -310,9 +307,8 @@ class ManageAssessmentTab extends State<ManageAssessment> {
         ),
         color: headingRowColor,
       ),
-      rowsPerPage: 10,
+      rowsPerPage: 6,
       showFirstLastButtons: true,
-      onRowsPerPageChanged: (noOfRows) {},
       renderEmptyRowsInTheEnd: true,
 
       columns: const [
@@ -594,7 +590,7 @@ class ManageAssessmentTab extends State<ManageAssessment> {
                               icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
                               dropdownColor: Colors.white,
                               style: const TextStyle(color: Colors.black, fontSize: 14),
-                              items: intakes.map((intake) {
+                              items: <String>['All', 'Jan-Apr 2025', 'May-Aug 2025', 'Sept-Dec 2025', 'Jan-Apr 2026'].map((intake) {
                                 return DropdownMenuItem(
                                   value: intake,
                                   child: Text(intake),

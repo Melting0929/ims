@@ -190,8 +190,8 @@ class _EditAssessmentState extends State<EditAssessment> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white), // Increase the size and set color
-          onPressed: () => Navigator.of(context).pop(), // Default back button action
+          icon: const Icon(Icons.arrow_back, size: 47, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(), 
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -400,14 +400,16 @@ class _EditAssessmentState extends State<EditAssessment> {
                                               }
 
                                               String templateID = templateSnapshot.docs.first.id;
+                                              DateTime openDate = DateFormat("dd MMM yyyy").parse(assessmentOpenDateController.text);
+                                              DateTime endDate = DateFormat("dd MMM yyyy").parse(assessmentEndDateController.text);
 
                                               var updatedassessmentData = {
                                                 'templateID': templateID,
                                                 'studID': studID,
                                                 'supervisorID': widget.userId,
                                                 'submissionURL': '',
-                                                'assessmentOpenDate': assessmentOpenDate,
-                                                'assessmentEndDate': assessmentEndDate,
+                                                'assessmentOpenDate': openDate,
+                                                'assessmentEndDate': endDate,
                                                 'intakePeriod': intakePeriod,
                                                 'submissionDate': '',
                                               };

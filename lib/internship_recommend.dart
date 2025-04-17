@@ -195,7 +195,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
   Future<void> fetchRecommendedJobs(String resumeText) async {
     try {
       final response = await http.post(
-        Uri.parse("https://recommendjobs-ayekkctrbq-uc.a.run.app"),
+        Uri.parse("https://us-central1-imsfyp2.cloudfunctions.net/recommendJobs"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"resume_text": resumeText}),
       );
@@ -233,8 +233,30 @@ class InternshipRecommendState extends State<InternshipRecommend> {
   Future<void> localMatchJobs() async {
     try {
       Set<String> matchedJobIds = {};
+      var studentDoc = await FirebaseFirestore.instance.collection('Student').doc(studID).get();
 
-      // Step 1: Match jobs based on resume text
+      // Step 1: Match jobs based on student dept
+      if (studentDoc.exists) {
+        var studentData = studentDoc.data();
+        String studProgram = studentData?['dept'] ?? '';
+
+        var jobsQuery = await FirebaseFirestore.instance
+            .collection('Job')
+            .where('jobType', isEqualTo: 'Registered')
+            .get();
+
+        for (var job in jobsQuery.docs) {
+          var jobData = job.data();
+          String jobProgram = jobData['program'] ?? '';
+
+          // Check if the student's program matches the job's program
+          if (studProgram.toLowerCase() == jobProgram.toLowerCase()) {
+            matchedJobIds.add(job.id); // Add to the Set
+          }
+        }
+      }
+
+      // Step 2: Match jobs based on resume text
       if (resumeURL.isNotEmpty) {
         String extractedText = await extractTextFromPDF(resumeURL);
 
@@ -264,9 +286,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 2: Match jobs based on student skills
-      var studentDoc = await FirebaseFirestore.instance.collection('Student').doc(studID).get();
-
+      // Step 3: Match jobs based on student skills
       if (studentDoc.exists) {
         var studentData = studentDoc.data();
         List<String> studentSkills = List<String>.from(studentData?['skill'] ?? []);
@@ -289,7 +309,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 3: Match jobs based on student details
+      // Step 4: Match jobs based on student details
       if (studentDoc.exists) {
         var studentData = studentDoc.data();
         String dept = studentData?['dept'] ?? '';
@@ -317,7 +337,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 4: Match jobs based on student program
+      // Step 5: Match jobs based on student program
       if (studentDoc.exists) {
         var studentData = studentDoc.data();
         String studProgram = studentData?['studProgram'] ?? '';
@@ -338,28 +358,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
         }
       }
 
-      // Step 5: Match jobs based on student dept
-      if (studentDoc.exists) {
-        var studentData = studentDoc.data();
-        String studProgram = studentData?['dept'] ?? '';
-
-        var jobsQuery = await FirebaseFirestore.instance
-            .collection('Job')
-            .where('jobType', isEqualTo: 'Registered')
-            .get();
-
-        for (var job in jobsQuery.docs) {
-          var jobData = job.data();
-          String jobProgram = jobData['program'] ?? '';
-
-          // Check if the student's program matches the job's program
-          if (studProgram.toLowerCase() == jobProgram.toLowerCase()) {
-            matchedJobIds.add(job.id); // Add to the Set
-          }
-        }
-      }
-
-      // Step 6: Add remaining jobs not in matchedJobIds
+      // Step 5: Add remaining jobs not in matchedJobIds
       QuerySnapshot allJobsSnapshot = await FirebaseFirestore.instance
           .collection('Job')
           .where('jobType', isEqualTo: 'Registered')
@@ -370,7 +369,7 @@ class InternshipRecommendState extends State<InternshipRecommend> {
           .where((id) => !matchedJobIds.contains(id))
           .toList();
 
-      // Step 7: Update the state with unique matched jobs
+      // Step 6: Update the state with unique matched jobs
       setState(() {
         recommendedJobs = [...matchedJobIds, ...otherJobs];
         isLoading = false;
@@ -624,7 +623,6 @@ class InternshipRecommendState extends State<InternshipRecommend> {
                                               }
 
                                               var companyData = companySnapshot.data!.docs.first.data() as Map<String, dynamic>?;
-                                              print("Fetched Company Data: $companyData"); 
 
                                               String companyName = companyData?['companyName'] ?? 'Unknown Company';
 

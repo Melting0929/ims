@@ -23,6 +23,8 @@ class EprofileSupervisorTab extends State<EprofileSupervisor> {
   String supervisorDept = "Loading...";
   String supervisorID = "Loading...";
 
+  List<String> depts = ['Engineering','IT','Business','Marketing','Science','Health & Medical','Arts & Design','Social Sciences','Education'];
+
   // Text editing controllers
   final TextEditingController supervisorNameController = TextEditingController();
   final TextEditingController supervisorEmailController = TextEditingController();
@@ -162,6 +164,7 @@ class EprofileSupervisorTab extends State<EprofileSupervisor> {
                                   // Full Name Field
                                   TextFormField(
                                     controller: supervisorNameController,
+                                    enabled: false,
                                     decoration: InputDecoration(
                                       labelText: "Full Name",
                                       hintText: "Enter the full name",
@@ -181,6 +184,7 @@ class EprofileSupervisorTab extends State<EprofileSupervisor> {
                                   // Email Field
                                   TextFormField(
                                     controller: supervisorEmailController,
+                                    enabled: false,
                                     decoration: InputDecoration(
                                       labelText: "Email",
                                       hintText: "Enter the email address",
@@ -259,7 +263,7 @@ class EprofileSupervisorTab extends State<EprofileSupervisor> {
                                       ),
                                       prefixIcon: const Icon(Icons.apartment),
                                     ),
-                                    items: <String>['Engineering', 'IT', 'Business', 'Marketing'] 
+                                    items: depts
                                         .map<DropdownMenuItem<String>>((String value) {
                                       return DropdownMenuItem<String>(
                                         value: value,

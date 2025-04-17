@@ -387,9 +387,23 @@ void initState() {
             studName = userData['name'] ?? 'Unknown Name';
           }
 
+          // Fetch offer letter from Assessment collection
+          String offerLetter = '';
+          QuerySnapshot assessmentSnapshot = await FirebaseFirestore.instance
+              .collection('Assessment')
+              .where('studID', isEqualTo: studID)
+              .where('templateID', isEqualTo: '1')
+              .limit(1)
+              .get();
+
+          if (assessmentSnapshot.docs.isNotEmpty) {
+            var assessmentData = assessmentSnapshot.docs.first.data() as Map<String, dynamic>;
+            offerLetter = assessmentData['submissionURL'] ?? '';
+          }
+
           Map<String, dynamic> applicantData = {
             'studID': intern['studID'] ?? '',
-            'offerletter': intern['offerletter'] ?? '',
+            'offerletter': offerLetter,
             'jobDesc': jobData['jobDesc'] ?? '',
             'jobTitle': jobData['jobTitle'] ?? '',
             'evaluation': application['evaluation'] ?? '',
