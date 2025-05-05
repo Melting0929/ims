@@ -22,6 +22,18 @@ An internship management system with mobile and web application developed using 
 
 - [Web App](https://imsfyp2.web.app)
 - [Mobile App (Andriod)](https://drive.google.com/drive/folders/1gi5WIj4pwNcuD_z1zpqhHHG8XWkmIhGu?usp=sharing)
+- Student:
+-   Username: 101@edu.my
+-   Password: Alice030502
+- Admin:
+-   Username: ahmad.zulkifli@uni.com.my
+-   Password: Password456
+- Company:
+-   Username: hr@segi.com
+-   Password: Password123
+- Supervisor:
+-   Username: hidayah.ismail@uni.com.my
+-   Password: Password123
 
 ## License
 
