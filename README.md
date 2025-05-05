@@ -21,7 +21,7 @@ An internship management system with mobile and web application developed using 
 ## Live Demo & Download
 
 - [Web App](https://imsfyp2.web.app)
-- [Mobile App (Andriod)](https://drive.google.com/drive/folders/1gi5WIj4pwNcuD_z1zpqhHHG8XWkmIhGu?usp=sharing)
+- [Mobile App (Andriod)](https://drive.google.com/file/d/1J7AxXQkKXob1l0Z9ac12x4UwrvJTrTzp/view?usp=sharing)
   
 - **Student:**
 -   Username: 101@edu.my
