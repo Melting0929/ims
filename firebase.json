@@ -13,12 +13,11 @@
     }
   ],
   "hosting": {
-    "public": "public",
-    "rewrites": [
-      {
-        "source": "/api/**",
-        "function": "recommendJobs"
-      }
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
     ]
   }
 }
