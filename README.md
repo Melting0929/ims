@@ -1,16 +1,28 @@
-# ims
+# Internship Management System (IMS)
 
-A new Flutter project.
+An internship management system with mobile and web application developed using Flutter and Firebase. This cross-platform system simplifies internship coordination among students, lecturers, administrators, and companies by automating job matching and streamlining communication.
 
-## Getting Started
+## Key Features
 
-This project is a starting point for a Flutter application.
+- User login and role-based dashboard for Students, Lecturers, Admins, and Companies
 
-A few resources to get you started if this is your first Flutter project:
+- Internship recommendation system
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Resume parsing from PDF documents with keyword extraction
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Company job posting management
+
+- Student management for supervisor and admin
+
+- Flutter-based mobile app (Android) and responsive web app
+
+- Firebase Firestore, and Storage integration
+
+## Live Demo & Download
+
+- [Web App](https://imsfyp2.web.app)
+- [Mobile App (Andriod)](https://drive.google.com/drive/folders/1gi5WIj4pwNcuD_z1zpqhHHG8XWkmIhGu?usp=sharing)
+
+## License
+
+- This project is licensed under the MIT License.
